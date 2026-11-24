@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use code, protocols, or retained computational packages from this repository, please cite it with the immutable Git commit SHA."
+type: software
+title: "hydrospectral-lab"
+abstract: "Exploring aquatic ecosystems through hyperspectral imaging, Earth observation, environmental foundation models, and reproducible computational experiments."
+authors:
+  - family-names: "Wongsatit"
+    given-names: "Thanakrit"
+license: MIT
+repository-code: "https://github.com/Azuromalachite/hydrospectral-lab"
+keywords:
+  - hyperspectral-imaging
+  - aquatic-remote-sensing
+  - ocean-color
+  - earth-observation
+  - foundation-models
+  - microbial-ecology
+  - reproducibility

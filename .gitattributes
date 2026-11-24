@@ -1,0 +1,24 @@
+* text=auto eol=lf
+*.ipynb text eol=lf
+*.py text eol=lf
+*.md text eol=lf whitespace=-blank-at-eol
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.cff text eol=lf
+*.csv text eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.gz binary
+*.zip binary
+*.nc binary
+*.nc4 binary
+*.h5 binary
+*.hdf5 binary
+*.tif binary
+*.tiff binary
