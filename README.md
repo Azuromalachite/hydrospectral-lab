@@ -23,8 +23,14 @@ Seed specification, provenance infrastructure, and tested configuration/manifest
 | --- | --- | --- |
 | `hydrospectral.thresholds` | Loads committed radiometric and QC constants from [`config/qc_thresholds.yaml`](config/qc_thresholds.yaml) | Invent silent fallback defaults for undeclared thresholds |
 | `hydrospectral.manifests` | Validates [`manifests/sources/*.yaml`](manifests/README.md) against [`schemas/source_manifest.schema.json`](schemas/source_manifest.schema.json) and refuses `example: true` templates | Claim a dataset digest is verified locally until `digest_verified` is earned on disk |
-| `tools/check_conflict_markers.py` | Scans tracked files for leftover Git conflict markers (with `--self-test`) | Flag legitimate Markdown `=======` setext headings or pass on an empty tree |
-| `tools/check_declared_encoding.py` | Verifies explicit `encoding=` on every Python text read/write across OS locales (with `--self-test`) | Skip `.github/` scripts or rely on directory names instead of `pyvenv.cfg` |
+| `hydrospectral.provenance` | Computes SHA-256 hashes, enforces `CohortCounts` denominators, and writes byte-deterministic `manifest.json` records | Accept `"verified"`/`"confirmed"` labels or wall-clock timestamps |
+| `hydrospectral.radiometry` | Computes $L_w$, $R_{rs}$, AVW harmonic mean, NDI/QWIP (caller-verified polynomial), band ratios, derivatives, and SAM | Silently clip negative $R_{rs}$ or embed unverified QWIP coefficients from memory |
+| `hydrospectral.srf` | Loads measured sensor SRFs and performs trapezoidal or irradiance-weighted band convolution | Silently integrate bands whose support extends outside the target spectrum |
+| `hydrospectral.geometry` | Computes conservative channel screening widths and projected water-mask EDT eligibility (`HS-R03`) | Model atmospheric adjacency, PSF, glint, clouds, or shallow-water bottom effects |
+| `hydrospectral.gloria` | Joins GLORIA tables strictly on `GLORIA_ID`, tracks untested QC flags, and isolates optically derived Chla targets | Join by row position or merge uncorrected chlorophyll + phaeopigments |
+| `hydrospectral.splits` | Builds zero-leakage `GroupKFold`/temporal splits, pooled & equal-group metrics, whole-group bootstrap CIs, and SAM OOD distances | Treat repeated observations from one waterbody as independent |
+| `tools/check_conflict_markers.py` | Scans tracked files for invalid UTF-8 and leftover Git conflict markers (with `--self-test`) | Flag legitimate Markdown `=======` setext headings or pass on an empty tree |
+| `tools/check_declared_encoding.py` | Verifies explicit non-null `encoding=` on `.py` and `.ipynb` text reads/writes across OS locales (with `--self-test`) | Skip `.github/` scripts or rely on directory names instead of `pyvenv.cfg` |
 | `tools/check_repo_hygiene.py` | Blocks tracked raw binaries/publisher PDFs, `config/local_paths.yaml`, `sprint/*` merges, and invalid source manifests (with `--self-test`) | Replace scientific review of cohort selection or validation splits |
 
 ### Workstream Stages
@@ -34,6 +40,7 @@ Seed specification, provenance infrastructure, and tested configuration/manifest
 | Workstream | Status | Notes |
 | --- | --- | --- |
 | Repository guards, QC config & source manifest schema | `IMPLEMENTED_AND_TESTED` | Enforced via `uv run pytest -q` and `tools/check_*.py --self-test` in CI |
+| Core Python library (`provenance`, `radiometry`, `srf`, `geometry`, `gloria`, `splits`) | `IMPLEMENTED_AND_TESTED` | Verified on analytical, boundary, and planted-defect synthetic fixtures |
 | GLORIA initial audit & 6-band rectangular baseline (`HS-R01`, `HS-R02`, `GL-R00`–`GL-R04`, `GL-R06`) | `EXPLORATORY_HANDOFF_ONLY` | Summarised in handoff §4; retained package import and independent rerun pending |
 | PACE-01 Gulf of Mexico introductory reconstructions | `EXPLORATORY_HANDOFF_ONLY` | Summarised in handoff §7 (V2.0 NRT educational granule) |
 | Level 1 — Observation (`Q01`–`Q03`: CIE colour, OWTs, AlphaEarth clustering/analogues) | `PLANNED` | Next active queue starts with `Q01` and `Q02` |

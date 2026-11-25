@@ -1,6 +1,6 @@
 [project]
 name = "hydrospectral"
-version = "0.1.0"
+version = "0.2.0"
 description = "Exploring aquatic ecosystems through hyperspectral imaging, Earth observation, environmental foundation models, and reproducible computational experiments."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -8,8 +8,17 @@ license = { file = "LICENSE" }
 authors = [{ name = "Thanakrit Wongsatit" }]
 dependencies = [
     "jsonschema>=4.21",
+    "numpy>=1.26",
+    "pandas>=2.2",
     "pyyaml>=6.0",
+    "scipy>=1.12",
 ]
+
+[project.optional-dependencies]
+ml = ["scikit-learn>=1.5"]
+pace = ["h5py>=3.10"]
+geo = ["rasterio>=1.4"]
+viz = ["matplotlib>=3.9"]
 
 [build-system]
 requires = ["hatchling"]
