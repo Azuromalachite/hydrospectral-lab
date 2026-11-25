@@ -1,6 +1,6 @@
 # Reference Access & Reading Status
 
-Snapshot: **25 November 2026**. Adapted from the access-ledger convention in `kvis-econ-games-2026`: a public landing page, a bibliographic export, a downloaded PDF, and a read full text are distinct states. HTTP 403 or API pagination failure records a retrieval barrier, not proof that a work is paywalled or absent.
+Snapshot: **25 November 2026**. A public landing page, a bibliographic export, a downloaded PDF, and a read full text are distinct states. HTTP 403 or API pagination failure records a retrieval barrier, not proof that a work is paywalled or absent.
 
 Third-party publisher PDFs are held privately outside the repository and are never committed to Git.
 

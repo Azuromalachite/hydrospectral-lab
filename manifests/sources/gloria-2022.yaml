@@ -1,0 +1,30 @@
+id: src.gloria-2022
+logical_name: GLORIA global hyperspectral in situ aquatic reflectance and water-quality dataset
+source: https://doi.org/10.1594/PANGAEA.948492
+discovered_via: https://doi.org/10.1038/s41597-023-01973-y
+license: CC-BY-4.0
+version_string: not declared
+record_count: 7572
+retrieved_utc: null
+bytes: null
+sha256: "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14"
+digest_verified: false
+local_path_key: datasets.gloria_2022_zip
+used_by:
+  - HS-R01
+  - HS-R02
+  - Q01
+  - Q08
+notes: >
+  PANGAEA.948492 distributes the archive as GLORIA-2022.zip without a separate
+  internal version field in the CSV tables, so version_string is recorded as
+  'not declared'. Expected SHA-256 and record_count (7,572 spectra) are carried
+  from the 2026-11-25 research handoff; digest_verified stays false until
+  recomputed against a locally staged archive in this workspace. Key caveats:
+  join strictly on GLORIA_ID; 1 nm grid (350-900 nm) is interpolated from
+  instruments with 1-10 nm native resolution (median 4.9 nm); rivers are only
+  3.3% (249/7572) with zero Thai observations; CSV audit shows 30 country
+  labels vs 31 reported in the paper; missing QC flags indicate unmeasured
+  wavelengths rather than passed tests; Lake Geneva Thetis profiler Chla values
+  are optically inferred and must be isolated from reflectance-to-Chla
+  benchmarks to avoid target circularity.

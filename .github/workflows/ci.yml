@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guards-and-tests:
+    name: ${{ matrix.os }} / python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.12"
+    env:
+      PYTHONIOENCODING: utf-8
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check git whitespace and diff formatting
+        run: |
+          if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            git diff --check HEAD~1..HEAD
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Verify lockfile matches pyproject.toml
+        run: uv lock --check
+
+      - name: Sync locked environment
+        run: uv sync --locked --group dev --python ${{ matrix.python-version }}
+
+      - name: Guard against invalid UTF-8 and leftover merge-conflict markers
+        run: |
+          uv run --python ${{ matrix.python-version }} python -I -X utf8 tools/check_conflict_markers.py
+          uv run --python ${{ matrix.python-version }} python -I -X utf8 tools/check_conflict_markers.py --self-test
+
+      - name: Guard explicit UTF-8 encoding on Python and notebook text I/O
+        run: |
+          uv run --python ${{ matrix.python-version }} python -I -X utf8 tools/check_declared_encoding.py
+          uv run --python ${{ matrix.python-version }} python -I -X utf8 tools/check_declared_encoding.py --self-test
+
+      - name: Guard repository data hygiene, lanes, and source manifests
+        run: |
+          uv run --python ${{ matrix.python-version }} python -I -X utf8 tools/check_repo_hygiene.py
+          uv run --python ${{ matrix.python-version }} python -I -X utf8 tools/check_repo_hygiene.py --self-test
+
+      - name: Run pytest suite (fails on empty collection)
+        run: uv run --python ${{ matrix.python-version }} pytest -q

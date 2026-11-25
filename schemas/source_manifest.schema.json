@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Azuromalachite/hydrospectral-lab/schemas/source_manifest.schema.json",
+  "title": "External dataset source manifest",
+  "description": "Metadata and byte-level provenance for an external dataset or satellite granule stored outside Git.",
+  "type": "object",
+  "required": [
+    "id",
+    "logical_name",
+    "source",
+    "license",
+    "version_string",
+    "sha256",
+    "digest_verified",
+    "local_path_key",
+    "notes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^src\\.[a-z0-9][a-z0-9_-]*$",
+      "description": "Stable source identifier, e.g. src.gloria-2022."
+    },
+    "logical_name": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "\\S",
+      "description": "Human-readable name of the dataset or granule (not just a filename)."
+    },
+    "source": {
+      "type": "string",
+      "minLength": 5,
+      "pattern": "\\S",
+      "description": "Persistent DOI or upstream URL from which the archive or granule is obtained."
+    },
+    "discovered_via": {
+      "type": ["string", "null"],
+      "pattern": "\\S",
+      "description": "Landing page, data descriptor DOI, or tutorial URL when distinct from the download source."
+    },
+    "license": {
+      "type": "string",
+      "minLength": 2,
+      "pattern": "\\S",
+      "description": "Upstream license or terms of use (e.g., CC-BY-4.0, NASA-Open-Data)."
+    },
+    "version_string": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Version declared by the file or archive metadata itself. Use 'not declared' if absent and explain in notes; never guess from a folder name."
+    },
+    "record_count": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Expected or locally verified observation/pixel-position count (with provenance noted in notes when digest_verified is false), else null."
+    },
+    "retrieved_utc": {
+      "type": ["string", "null"],
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Valid calendar UTC date (YYYY-MM-DD) when retrieved on working storage, or null if not yet staged locally."
+    },
+    "bytes": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Exact byte size when verified on local storage, else null."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Expected or locally recomputed lowercase SHA-256 hex digest."
+    },
+    "digest_verified": {
+      "type": "boolean",
+      "description": "True ONLY after recomputing sha256 against the local file staged for this checkout. False when carried forward from prior notes or upstream documentation."
+    },
+    "local_path_key": {
+      "type": "string",
+      "pattern": "^datasets\\.[a-z0-9_]+$",
+      "description": "Key in gitignored config/local_paths.yaml pointing to the local file or directory, keeping machine-specific paths out of Git."
+    },
+    "used_by": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S"
+      },
+      "description": "Scripts, notebooks, or experiment IDs consuming this dataset."
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 10,
+      "pattern": "\\S",
+      "description": "Required caveats and properties the file does NOT declare about itself (e.g., sampling skew, NRT status, target circularity, unmeasured flag columns)."
+    },
+    "example": {
+      "type": "boolean",
+      "description": "True only on the worked template record, which validators must refuse as real evidence."
+    }
+  }
+}

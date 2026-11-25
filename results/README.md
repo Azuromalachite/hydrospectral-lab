@@ -12,7 +12,7 @@ Every result directory must state one of three statuses in its `README.md` and `
 
 ## Deterministic `manifest.json` contract
 
-Adapted from `kvis-econ-games-2026`:
+Every retained package `manifest.json` follows these rules:
 
 - **No wall-clock timestamps** inside `manifest.json` so deterministic reruns rewrite the file byte-for-byte; execution timing belongs in Git commit metadata or PR notes.
 - **Repository-relative paths** from the repository root for all scripts, configs, inputs, and outputs.

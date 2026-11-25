@@ -1,0 +1,22 @@
+# Copy to config/local_paths.yaml and record the ACTUAL paths discovered on
+# your workstation. config/local_paths.yaml is gitignored and enforced by
+# tools/check_repo_hygiene.py so machine-specific paths never enter Git.
+#
+# Never carry paths or cloud project IDs over blindly from an older session;
+# verify each location and file hash on disk first.
+
+machine: local-workstation   # short label recorded in run manifests
+
+datasets:
+  gloria_2022_zip: null      # e.g. C:/data/aquatic/GLORIA-2022.zip
+  pace_oci_20240730_nrt: null  # e.g. C:/data/aquatic/PACE_OCI.20240730T181157.L2.OC_AOP.V2_0.NRT.nc
+  pace_granules_dir: null    # directory holding additional NASA PACE L2 granules
+  pardig_dir: null           # directory holding PARDIG precipitation files
+  sentinel3_dir: null        # directory holding native Sentinel-3 OLCI + SLSTR scenes
+
+cloud:
+  earth_engine_project: null # Google Cloud project ID for ee.Initialize(); never commit real IDs/keys
+
+workspace:
+  scratch_dir: null          # outside this repository; for one-off sweeps, debug plots, and logs
+  results_dir: results       # repository-relative path for compact retained packages
