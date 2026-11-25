@@ -37,6 +37,9 @@ def test_committed_qc_thresholds_match_published_constants() -> None:
     assert get_threshold(cfg, "avw.visible_window_nm.min_nm") == 400
     assert get_threshold(cfg, "avw.visible_window_nm.max_nm") == 700
     assert get_threshold(cfg, "qwip.ndi_wavelengths_nm") == [492, 665]
+    assert get_threshold(cfg, "qwip.polynomial_coefficients_avw_desc") == pytest.approx(
+        [-8.399885e-9, 1.715532e-5, -1.301670e-2, 4.357838, -544.9532]
+    )
     assert get_threshold(cfg, "qwip.max_abs_deviation") == pytest.approx(0.2)
     assert get_threshold(cfg, "screening_geometry.default_bank_buffer_m") == pytest.approx(20.0)
 

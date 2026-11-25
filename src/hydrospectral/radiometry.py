@@ -243,7 +243,7 @@ def compute_qwip_score(
     rrs: ArrayLike,
     wavelengths_nm: ArrayLike,
     *,
-    polynomial_coefficients_desc: Sequence[float],
+    polynomial_coefficients_desc: Sequence[float] | None = None,
     config: Mapping[str, Any] | None = None,
     tolerance_nm: float = 0.5,
     integration: str = "discrete",
@@ -251,16 +251,22 @@ def compute_qwip_score(
 ) -> dict[str, np.ndarray]:
     """Compute QWIP deviation = NDI_obs(492, 665) - P_4(AVW) and pass/fail flags.
 
-    Requires caller-supplied `polynomial_coefficients_desc` (highest power first,
-    5 coefficients for the 4th-order AVW polynomial verified from Dierssen et al.
-    2022 / Zenodo 10.5281/zenodo.7373840) rather than embedding unverified memory
-    constants. Reads `ndi_wavelengths_nm` and `max_abs_deviation` (0.2) from
+    Defaults to the published QWIP v1.1 4th-order AVW polynomial coefficients
+    (Dierssen et al. 2022, DOI: 10.3389/frsen.2022.869611; Zenodo 7373840)
+    committed in config/qc_thresholds.yaml, while permitting explicit caller
+    overrides. Reads `ndi_wavelengths_nm` and `max_abs_deviation` (0.2) from
     config/qc_thresholds.yaml.
 
     Flag semantics preserve missingness: `qwip_fail` is a float array of
     0.0 (passed), 1.0 (failed: |score| > max_abs_deviation), or NaN (untested).
     """
-    coeffs = np.asarray(polynomial_coefficients_desc, dtype=float)
+    cfg = load_qc_thresholds() if config is None else dict(config)
+    raw_coeffs = (
+        get_threshold(cfg, "qwip.polynomial_coefficients_avw_desc")
+        if polynomial_coefficients_desc is None
+        else polynomial_coefficients_desc
+    )
+    coeffs = np.asarray(raw_coeffs, dtype=float)
     if coeffs.ndim != 1 or coeffs.size != 5 or not np.isfinite(coeffs).all():
         raise RadiometryError(
             "polynomial_coefficients_desc must be 5 finite floats [p4, p3, p2, p1, p0]"
@@ -269,7 +275,6 @@ def compute_qwip_score(
     spec, _ = _as_2d_spectra(rrs)
     wl = _validate_wavelengths(wavelengths_nm, spec.shape[1])
 
-    cfg = load_qc_thresholds() if config is None else dict(config)
     ndi_pair = get_threshold(cfg, "qwip.ndi_wavelengths_nm")
     cutoff = float(get_threshold(cfg, "qwip.max_abs_deviation"))
 

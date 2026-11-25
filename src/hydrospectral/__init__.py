@@ -1,11 +1,13 @@
-"""Core provenance, radiometry, SRF convolution, geometry, GLORIA, and split utilities."""
+"""Core provenance, radiometry, colourimetry, PACE swath, SRF, geometry, GLORIA, and split utilities."""
 
 from __future__ import annotations
 
 from hydrospectral import (
+    color,
     geometry,
     gloria,
     manifests,
+    pace,
     provenance,
     radiometry,
     splits,
@@ -13,13 +15,15 @@ from hydrospectral import (
     thresholds,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "__version__",
+    "color",
     "geometry",
     "gloria",
     "manifests",
+    "pace",
     "provenance",
     "radiometry",
     "splits",
