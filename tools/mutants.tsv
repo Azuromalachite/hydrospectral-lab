@@ -4,8 +4,8 @@ gloria_alh_filter_disabled	src/hydrospectral/gloria.py	tests/test_gloria_and_spl
 gloria_qc_domain_bypassed	src/hydrospectral/gloria.py	tests/test_gloria_and_splits.py	bad_domain = (~np.isfinite(valid_vals)) | (~valid_vals.isin([0, 1]))	bad_domain = pd.Series(False, index=valid_vals.index)
 splits_group_leakage_disabled	src/hydrospectral/splits.py	tests/test_gloria_and_splits.py	if group_overlap:	if False:
 splits_nan_group_bypass	src/hydrospectral/splits.py	tests/test_gloria_and_splits.py	if pd.isna(g[tr]).any() or pd.isna(g[te]).any():	if False:
-radiometry_avw_window_bypass	src/hydrospectral/radiometry.py	tests/test_provenance_and_radiometry.py	if wl[0] > lo or wl[-1] < hi:	if False:
+radiometry_avw_window_bypass	src/hydrospectral/radiometry.py	tests/test_radiometry.py	if wl[0] > lo or wl[-1] < hi:	if False:
 srf_support_guard_bypass	src/hydrospectral/srf.py	tests/test_srf_and_geometry.py	if np.any((resp > support_rel_tol * rmax) & outside):	if False:
-palette_render_key_bypass	src/hydrospectral/palette.py	tests/test_palette_and_provenance_keys.py	if not isinstance(key_a, str) or not isinstance(key_b, str) or key_a != key_b:	if False:
-provenance_cohort_key_bypass	src/hydrospectral/provenance.py	tests/test_palette_and_provenance_keys.py	if not isinstance(key_a, str) or not isinstance(key_b, str) or key_a != key_b:	if False:
+palette_render_key_bypass	src/hydrospectral/palette.py	tests/test_palette_and_provenance_keys.py	if not valid_pair:	if False:
+provenance_cohort_key_bypass	src/hydrospectral/provenance.py	tests/test_palette_and_provenance_keys.py	if not valid_pair:	if False:
 provenance_untracked_ignored	src/hydrospectral/provenance.py	tests/test_palette_and_provenance_keys.py	["git", "status", "--porcelain", "--untracked-files=normal"],	["git", "status", "--porcelain", "--untracked-files=no"],

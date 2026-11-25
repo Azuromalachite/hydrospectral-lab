@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
@@ -28,6 +29,7 @@ from numpy.typing import ArrayLike
 
 AVAILABLE_PALETTES = ("batlow", "vik", "lajolla")
 VALID_PALETTE_KINDS = frozenset({"sequential", "diverging"})
+_SHORT_KEY_RE = re.compile(r"^[0-9a-f]{16,64}$")
 _BUNDLED_PALETTES_PATH = Path(__file__).resolve().parent / "_bundled" / "crameri_colormaps.json"
 
 
@@ -123,16 +125,26 @@ def compute_render_key(
     }
     if extra is not None:
         payload["extra"] = dict(extra)
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    try:
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise PaletteError(f"render_key inputs are not strict JSON serializable: {exc}") from exc
     return hashlib.sha256(encoded).hexdigest()[:16]
 
 
 def assert_matching_render_keys(key_a: str, key_b: str, *, context: str = "") -> None:
-    """Refuse visual comparison between two plots that do not share a render_key."""
-    if not isinstance(key_a, str) or not isinstance(key_b, str) or key_a != key_b:
+    """Refuse visual comparison between two plots that do not share a valid render_key."""
+    valid_pair = (
+        isinstance(key_a, str)
+        and isinstance(key_b, str)
+        and bool(_SHORT_KEY_RE.match(key_a))
+        and bool(_SHORT_KEY_RE.match(key_b))
+        and key_a == key_b
+    )
+    if not valid_pair:
         prefix = f"{context}: " if context else ""
         raise PaletteError(
-            f"{prefix}render_key mismatch ({key_a!r} != {key_b!r}); "
+            f"{prefix}render_key mismatch or invalid key ({key_a!r} vs {key_b!r}); "
             "refusing side-by-side comparison across incompatible colour scales"
         )
 

@@ -70,6 +70,8 @@ def test_render_key_gates_visual_comparisons_and_maps_boundaries() -> None:
         assert_matching_render_keys(k1, k_diff_scale, context="scale drift")
     with pytest.raises(PaletteError, match="render_key mismatch"):
         assert_matching_render_keys(k1, k_diff_rev, context="orientation flip")
+    with pytest.raises(PaletteError, match="invalid key"):
+        assert_matching_render_keys("", "", context="empty keys")
 
     with pytest.raises(PaletteError, match="not 'diverging'"):
         compute_render_key("batlow", -1.0, 1.0, kind="diverging")
@@ -119,6 +121,8 @@ def test_cohort_key_and_manifest_key_validation() -> None:
     )
     with pytest.raises(ProvenanceError, match="cohort_key mismatch"):
         assert_matching_cohort_keys(ck1, ck_win, context="window mismatch")
+    with pytest.raises(ProvenanceError, match="invalid key"):
+        assert_matching_cohort_keys("", "", context="empty keys")
 
     rk = compute_render_key("batlow", 440.0, 570.0, kind="sequential")
     m = build_manifest(
@@ -142,6 +146,9 @@ def test_cohort_key_and_manifest_key_validation() -> None:
     bad_m = dict(m, cohort_key="not-hex!")
     with pytest.raises(ProvenanceError, match="manifest.cohort_key"):
         validate_manifest(bad_m)
+    bad_mc = dict(m, measurement_contract="hydrospectral.numeric/999")
+    with pytest.raises(ProvenanceError, match="measurement_contract"):
+        validate_manifest(bad_mc)
 
 
 def test_inspect_git_provenance_detects_dirty_untracked_and_missing_blobs(tmp_path: Path) -> None:

@@ -8,7 +8,7 @@
 ## 1. Scientific question
 
 On the globally compiled, locally verified GLORIA aquatic hyperspectral archive (`src.gloria-2022`), does full 1 nm hyperspectral remote-sensing reflectance (`400–800 nm`) yield a statistically and practically meaningful out-of-sample improvement over:
-1. Official sensor spectral response function (SRF) convolutions of **ESA Sentinel-2 MSI** (water bands inside `400–800 nm`: B1–B7) and **ESA Sentinel-3 OLCI** (bands inside `400–800 nm`: Oa01–Oa16), and
+1. Official sensor spectral response function (SRF) convolutions of **ESA Sentinel-2 MSI** and **ESA Sentinel-3 OLCI** restricted strictly to bands whose full non-zero SRF support lies inside `[400, 800]` nm (enforced by `hydrospectral.srf.build_srf_weight_matrix`; e.g., expected `B1–B6`—and `B7` only if its upper tail stays within `800 nm`—plus `Oa02–Oa16`, excluding `Oa01` whose 400 nm centre extends below 400 nm), and
 2. Interpretable physical/statistical baselines (2-band red-edge ratio `Rrs(705)/Rrs(665)`, Apparent Visible Wavelength `AVW`, and geographic/seasonal baseline `M0`)
 
 when predicting `log10(Chla)`, `log10(TSS)`, and `log10(aCDOM440)` under **waterbody-held-out** (`Country|Site_name`) and **study-held-out** (`Dataset_ID`) 5-fold cross-validation?
@@ -47,13 +47,15 @@ You cannot un-see prior exploratory runs. Before committing this protocol, the f
 4. **`S3_SRF`:** Official ESA Sentinel-3 OLCI SRF-convolved bands within `400–800 nm`.
 5. **`HS_401`:** Full 1 nm GLORIA reflectance (`400–800 nm`, 401 bands) with standardized preprocessing (raw reflectance and L2-normalized shape + log-magnitude as two fixed sub-arms).
 
-### Fixed estimator family (CPU-reproducible)
-- Ridge regression (`RidgeCV` inner group-aware CV on training folds only) and HistGradientBoostingRegressor / RandomForest with fixed hyperparameter grids (locked before seeing test folds).
+### Fixed estimator family (CPU-reproducible, grids locked prior to test evaluation)
+- **Linear regularized (`Ridge`):** `alpha` selected strictly inside training folds over the 17-point log-spaced grid `np.logspace(-4, 4, 17)`.
+- **Nonlinear tree ensemble (`HistGradientBoostingRegressor`):** `max_iter=300`, `random_state=2026`, tuning strictly inside training folds over `max_depth in {3, 6}`, `learning_rate in {0.03, 0.1}`, `min_samples_leaf in {10, 30}`, and `l2_regularization in {0.0, 1.0}`.
 
-### Splits (all three reported side-by-side)
+### Splits (all four reported side-by-side)
 1. **Primary:** 5-fold waterbody-held-out `GroupKFold` on `Country|Site_name`.
 2. **Primary (transfer):** 5-fold study-held-out `GroupKFold` on `Dataset_ID`.
-3. **Diagnostic reference only:** 5-fold random K-fold (reported strictly to quantify validation-inflation gap, never used for model selection).
+3. **Primary (prospective temporal):** Chronological holdout via `hydrospectral.splits.make_temporal_split` on `Date_Time_UTC` (cutoff fixed at the 80th percentile timestamp of dated cohort observations per target; undated rows reported explicitly in exclusion accounting).
+4. **Diagnostic reference only:** 5-fold random K-fold (reported strictly to quantify validation-inflation gap, never used for model selection).
 
 ### Committed radiometric error budget (analogous to `espmap/bench/`)
 Report paired delta sensitivity on the primary split for:

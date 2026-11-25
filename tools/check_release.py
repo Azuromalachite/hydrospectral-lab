@@ -38,11 +38,18 @@ from hydrospectral.provenance import CONTRACT_BY_RELEASE, MEASUREMENT_CONTRACTS 
 
 ACCEPTANCE_SCHEMA = "hydrospectral.acceptance/1"
 SEMVER_RELEASE_RE = re.compile(r"^\d+\.\d+\.\d+$")
-MAY_DIFFER = (
-    re.compile(r"(?:.*/)?[^/]*\.md$"),
-    re.compile(r"^CITATION\.cff$"),
-    re.compile(r"^results/releases/acceptance_v[^/]+\.json$"),
-)
+
+
+def _is_int(val: Any) -> bool:
+    return isinstance(val, int) and not isinstance(val, bool)
+
+
+def _allowed_diff_patterns(version: str) -> tuple[re.Pattern[str], ...]:
+    return (
+        re.compile(r"(?:.*/)?[^/]*\.md$"),
+        re.compile(r"^CITATION\.cff$"),
+        re.compile(rf"^results/releases/acceptance_v{re.escape(version)}\.json$"),
+    )
 
 
 def commit_of(code: Any) -> str | None:
@@ -103,26 +110,37 @@ def check_acceptance(
     else:
         if suite.get("code") != code:
             problems.append(f"suite ran on {suite.get('code')!r}, not accepted {code!r}")
-        if suite.get("returncode") != 0:
+        if not _is_int(suite.get("returncode")) or suite.get("returncode") != 0:
             problems.append(f"suite exited {suite.get('returncode')!r}, not 0")
-        if suite.get("failed") != 0 or suite.get("errors") != 0 or not suite.get("passed"):
+        passed = suite.get("passed")
+        failed = suite.get("failed")
+        errors = suite.get("errors")
+        if (
+            not _is_int(passed)
+            or passed <= 0
+            or not _is_int(failed)
+            or failed != 0
+            or not _is_int(errors)
+            or errors != 0
+        ):
             problems.append(
-                f"suite did not pass cleanly: passed={suite.get('passed')}, "
-                f"failed={suite.get('failed')}, errors={suite.get('errors')}"
+                f"suite did not pass cleanly: passed={passed!r}, "
+                f"failed={failed!r}, errors={errors!r}"
             )
 
     mutants = acc.get("mutants")
     if not isinstance(mutants, Mapping):
         problems.append("missing mutation-testing summary")
     else:
-        if mutants.get("returncode") != 0:
+        if not _is_int(mutants.get("returncode")) or mutants.get("returncode") != 0:
             problems.append(f"mutation check exited {mutants.get('returncode')!r}, not 0")
         killed = mutants.get("killed")
         total = mutants.get("total")
-        if not isinstance(total, int) or total <= 0 or killed != total:
-            problems.append(f"not all mutants killed: {killed}/{total}")
+        if not _is_int(total) or not _is_int(killed) or total <= 0 or killed != total:
+            problems.append(f"not all mutants killed: {killed!r}/{total!r}")
 
-    moved = [p.replace("\\", "/") for p in changed if not any(rx.fullmatch(p.replace("\\", "/")) for rx in MAY_DIFFER)]
+    allowed = _allowed_diff_patterns(version)
+    moved = [p.replace("\\", "/") for p in changed if not any(rx.fullmatch(p.replace("\\", "/")) for rx in allowed)]
     if moved:
         problems.append("code/data changed after acceptance: " + ", ".join(sorted(moved)))
     return problems
@@ -165,24 +183,27 @@ def self_test() -> int:
     if clean:
         failures.append(f"clean acceptance failed: {clean}")
 
-    # 2. Planted code change after acceptance must fail.
-    if not check_acceptance(
-        good_acc,
-        "0.4.0",
-        ["src/hydrospectral/gloria.py"],
-        code_version="0.4.0",
-        citation_version="0.4.0",
-        contract_by_release=contracts,
-    ):
-        failures.append("missed code change after acceptance")
+    # 2. Planted code change or older acceptance file edit after acceptance must fail.
+    for bad_path in ("src/hydrospectral/gloria.py", "results/releases/acceptance_v0.3.0.json"):
+        if not check_acceptance(
+            good_acc,
+            "0.4.0",
+            [bad_path],
+            code_version="0.4.0",
+            citation_version="0.4.0",
+            contract_by_release=contracts,
+        ):
+            failures.append(f"missed forbidden post-acceptance change: {bad_path}")
 
-    # 3. Planted .dev0 code version, dirty commit, surviving mutant, and non-zero suite rc must fail.
+    # 3. Planted .dev0 code version, dirty commit, surviving mutant, bool counts, and non-zero suite rc must fail.
     for label, acc_mut, cv, civ, cbr in [
         ("dev0_code", good_acc, "0.4.0.dev0", "0.4.0", contracts),
         ("citation_mismatch", good_acc, "0.4.0", "0.3.0", contracts),
         ("missing_contract", good_acc, "0.4.0", "0.4.0", {}),
         ("dirty_commit", dict(good_acc, acceptance_code="v0.4.0-1-gabcdef0-dirty"), "0.4.0", "0.4.0", contracts),
         ("nonzero_suite", dict(good_acc, suite=dict(good_acc["suite"], returncode=1)), "0.4.0", "0.4.0", contracts),
+        ("bool_suite_passed", dict(good_acc, suite=dict(good_acc["suite"], passed=True)), "0.4.0", "0.4.0", contracts),
+        ("bool_mutants", dict(good_acc, mutants={"returncode": 0, "killed": True, "total": True}), "0.4.0", "0.4.0", contracts),
         ("survived_mutant", dict(good_acc, mutants={"returncode": 0, "killed": 9, "total": 10}), "0.4.0", "0.4.0", contracts),
     ]:
         if not check_acceptance(acc_mut, "0.4.0", [], code_version=cv, citation_version=civ, contract_by_release=cbr):

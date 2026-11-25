@@ -213,11 +213,18 @@ def compute_cohort_key(
 
 
 def assert_matching_cohort_keys(key_a: str, key_b: str, *, context: str = "") -> None:
-    """Refuse direct comparison between two runs whose cohort_key differs."""
-    if not isinstance(key_a, str) or not isinstance(key_b, str) or key_a != key_b:
+    """Refuse direct comparison between two runs whose cohort_key differs or is invalid."""
+    valid_pair = (
+        isinstance(key_a, str)
+        and isinstance(key_b, str)
+        and bool(_SHORT_KEY_RE.match(key_a))
+        and bool(_SHORT_KEY_RE.match(key_b))
+        and key_a == key_b
+    )
+    if not valid_pair:
         prefix = f"{context}: " if context else ""
         raise ProvenanceError(
-            f"{prefix}cohort_key mismatch ({key_a!r} != {key_b!r}); "
+            f"{prefix}cohort_key mismatch or invalid key ({key_a!r} vs {key_b!r}); "
             "refusing direct comparison across different cohorts, targets, QC rules, or splits"
         )
 
@@ -374,6 +381,11 @@ def validate_manifest(manifest: Mapping[str, Any]) -> None:
 
     if manifest.get("schema_version") != 1:
         raise ProvenanceError(f"unsupported schema_version: {manifest.get('schema_version')!r}")
+    if "measurement_contract" in manifest and manifest["measurement_contract"] is not None:
+        if manifest["measurement_contract"] not in MEASUREMENT_CONTRACTS:
+            raise ProvenanceError(
+                f"unknown manifest.measurement_contract: {manifest['measurement_contract']!r}"
+            )
     for field in ("experiment_id", "title"):
         val = manifest.get(field)
         if not isinstance(val, str) or not val.strip():
