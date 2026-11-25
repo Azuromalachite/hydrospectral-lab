@@ -21,10 +21,11 @@ avw:
     max_nm: 700
 
 qwip:
-  # Dierssen et al. (2022), DOI: 10.3389/frsen.2022.869611; Lehmann et al. (2023)
-  # Exact 4th-order AVW polynomial coefficients and sign convention to be pinned
-  # directly from Zenodo 10.5281/zenodo.7373840 when implementing OPT-06.
+  # Dierssen et al. (2022), DOI: 10.3389/frsen.2022.869611; QWIP v1.1 (Zenodo 10.5281/zenodo.7373840)
+  # NDI(492, 665) = (Rrs(665) - Rrs(492)) / (Rrs(665) + Rrs(492))
+  # QWIP_score = NDI(492, 665) - polyval(polynomial_coefficients_avw_desc, AVW)
   ndi_wavelengths_nm: [492, 665]
+  polynomial_coefficients_avw_desc: [-8.399885e-9, 1.715532e-5, -1.301670e-2, 4.357838, -544.9532]
   max_abs_deviation: 0.2
 
 screening_geometry:

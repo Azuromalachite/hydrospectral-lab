@@ -19,12 +19,14 @@ FORBIDDEN_TIMESTAMP_KEYS = frozenset(
     {"timestamp", "created_at", "executed_at", "run_time", "wall_clock_utc"}
 )
 DEFAULT_RUNTIME_PACKAGES = (
+    "colour-science",
+    "h5py",
     "hydrospectral",
+    "jsonschema",
     "numpy",
     "pandas",
-    "scipy",
     "pyyaml",
-    "jsonschema",
+    "scipy",
 )
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
