@@ -1,0 +1,6 @@
+archetype,avw_min_nm,avw_max_nm,n_gloria_train,n_pace_sampled,pace_sampled_fraction,median_sam_rad,median_spectral_area_sr_inv_nm
+Q1_bluest_AVW,456.3588,524.1817,1418,17,0.0085,0.08505,0.579523
+Q2_blue_green_AVW,524.1817,547.7563,1418,12,0.006,0.08907,1.311542
+Q3_green_AVW,547.7563,560.206,1418,6,0.003,0.09193,1.057023
+Q4_reddest_AVW,560.206,618.7941,1418,3,0.0015,0.08249,1.232071
+unclassified_ood,,,0,1962,0.981,0.50409,0.940067

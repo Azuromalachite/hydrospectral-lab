@@ -1,0 +1,78 @@
+{
+  "counts": {
+    "gloria_visible": {
+      "attempted": 7572,
+      "completed": 5719,
+      "denominator": 7572,
+      "excluded": 1853,
+      "exclusion_reasons": {
+        "incomplete_400_700nm": 85,
+        "qc_flagged": 1768
+      },
+      "failed": 0
+    },
+    "pace_swath_pca": {
+      "attempted": 2175120,
+      "completed": 129764,
+      "denominator": 2175120,
+      "excluded": 2045356,
+      "exclusion_reasons": {
+        "l2_flags_or_mask_excluded": 2045355,
+        "nonfinite_rrs_in_window": 1
+      },
+      "failed": 0
+    }
+  },
+  "experiment_id": "Q01",
+  "extra": {
+    "n_gloria_site_medians": 440,
+    "n_pace_ood_flagged": 1361,
+    "n_pace_ood_sampled": 2000,
+    "output_csv_sha256": {
+      "gloria_color_by_water_body_type.csv": "a10f201ad6776025117e4c5398ffd1ef11032e6167fd421c70c6c9cf5cb5685f",
+      "gloria_color_by_water_type.csv": "e62e83162b667679f187d10c2e205b0f217936e2303ff2ae8b0f0ba2cceb8cef",
+      "owt_archetype_summary.csv": "1fdbdec0777218e6af75cbb231ad7709dedbd82de41b4e8dc0940e76f6b76d4a",
+      "pace_swath_summary.csv": "6b361cdb8fcde10cc7cb1fa0c36c6bbd4da2f8701e06c2514d24bb9a7e30dccc"
+    },
+    "sam_ood_threshold_rad": 0.097949
+  },
+  "git_commit": "b2d5dbd10f4369995fd7dc2aaf90b148b8cb240c",
+  "inputs_sha256": {
+    "src.gloria-2022": "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14",
+    "src.pace-oci-20240730-nrt": "db38c89499f33603de850e1b321e1adbdbcd0609ebc7c532050c8d16d183e98e"
+  },
+  "prior_exposure": "Prior exploratory GLORIA audit and PACE-01 RGB/false-colour/PCA inspection documented in docs/aquatic-hyperspectral-handoff-2026-11-25.md (\u00a74, \u00a77)",
+  "randomness": {
+    "pairing_rule": "Exploratory linear interpolation of site-median GLORIA spectra onto PACE OCI 400-700 nm band centers (not official OCI SRF convolution)",
+    "seed": 2026
+  },
+  "runtime": {
+    "implementation": "CPython",
+    "packages": {
+      "colour-science": "0.4.7",
+      "h5py": "3.16.0",
+      "hydrospectral": "0.3.0",
+      "jsonschema": "4.26.0",
+      "numpy": "2.5.5",
+      "pandas": "3.1.1",
+      "pyyaml": "6.0.4",
+      "scipy": "1.18.1"
+    },
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python_version": "3.14.6"
+  },
+  "schema_version": 1,
+  "script": {
+    "path": "notebooks/Q01_water_colour_and_owts.ipynb",
+    "sha256": "782616f85bf90496e65024fe38ba86efb2ff734d6c206a9d84c55bb4f1c0652f"
+  },
+  "status": "exploratory",
+  "title": "GLORIA CIE water colour atlas and PACE-01 optical exploration",
+  "units": {
+    "Rrs": "sr^-1",
+    "avw_nm": "nm",
+    "hue_angle_deg": "deg",
+    "sam_rad": "rad",
+    "spectral_area": "sr^-1 nm"
+  }
+}

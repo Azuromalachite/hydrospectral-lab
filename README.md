@@ -17,7 +17,7 @@ Core records:
 
 ## Status & What Is Executable Today
 
-Seed specification, provenance infrastructure, and tested configuration/manifest guards. **No confirmatory ecological or Thai field validation claim is made here**; benchmark numbers recorded in the [2026-11-25 handoff](docs/aquatic-hyperspectral-handoff-2026-11-25.md) retain their stated `exploratory` or `provenance-incomplete` status until packaged and independently rerun.
+Core Python library, tested QC/manifest guards, locally verified external dataset manifests (`GLORIA-2022.zip`, `PACE-01`), and an initial retained `exploratory` Level-1 colour/OWT package ([`results/Q01_water_colour/`](results/Q01_water_colour/README.md)). **No confirmatory ecological or Thai field validation claim is made here**; benchmark numbers recorded in the [2026-11-25 handoff](docs/aquatic-hyperspectral-handoff-2026-11-25.md) and [`results/Q01_water_colour/`](results/Q01_water_colour/README.md) retain their stated `exploratory` or `provenance-incomplete` status until independently rerun.
 
 | Component | Does | Does not |
 | --- | --- | --- |
@@ -45,7 +45,7 @@ Seed specification, provenance infrastructure, and tested configuration/manifest
 | Core Python library (`provenance`, `radiometry`, `color`, `pace`, `srf`, `geometry`, `gloria`, `splits`) | `IMPLEMENTED_AND_TESTED` | Verified on analytical, boundary, synthetic HDF5, and planted-defect fixtures |
 | GLORIA initial audit & 6-band rectangular baseline (`HS-R01`, `HS-R02`, `GL-R00`–`GL-R04`, `GL-R06`) | `EXPLORATORY_HANDOFF_ONLY` | Summarised in handoff §4; retained package import and independent rerun pending |
 | PACE-01 Gulf of Mexico introductory reconstructions | `EXPLORATORY_HANDOFF_ONLY` | Summarised in handoff §7 (V2.0 NRT educational granule) |
-| Level 1 — `Q01` water colour & OWTs ([Q01 notebook](notebooks/Q01_water_colour_and_owts.ipynb)) | `NOTEBOOK_READY_AWAITING_LOCAL_DATA` | CPU-only notebook wired to `config/local_paths.yaml`; awaiting local GLORIA + PACE-01 run |
+| Level 1 — `Q01` water colour & OWTs ([Q01 notebook](notebooks/Q01_water_colour_and_owts.ipynb) · [results](results/Q01_water_colour/README.md)) | `EXPLORATORY_EXECUTED` | Executed end-to-end on locally verified GLORIA + PACE-01 archives; compact CSVs, figures, and deterministic `manifest.json` retained under `results/Q01_water_colour/` (`status: exploratory`) |
 | Level 1 — `Q02`–`Q03` (AlphaEarth landscape clustering & waterway analogues) | `PLANNED` | Requires Earth Engine project ID in gitignored `config/local_paths.yaml` |
 | Level 2 — Quantification (`Q04`–`Q06`: PARDIG rainfall, PACE products, Granite Ocean) | `PLANNED` | Verify PARDIG access and native Sentinel-3 Granite interface before execution |
 | Level 3 — Integration (`Q07`–`Q09`: plume lags, `GLORIA-Context` ablations, OWT embeddings) | `PLANNED` | Requires pre-registered cohorts and waterbody/study/temporal holdouts |

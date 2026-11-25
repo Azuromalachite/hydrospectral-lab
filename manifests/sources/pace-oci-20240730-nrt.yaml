@@ -5,20 +5,25 @@ discovered_via: https://pace.oceansciences.org/access_pace_data.htm
 license: NASA-Open-Data
 version_string: V2_0.NRT
 record_count: 2175120
-retrieved_utc: null
-bytes: null
+retrieved_utc: "2026-11-26"
+bytes: 147995278
 sha256: "db38c89499f33603de850e1b321e1adbdbcd0609ebc7c532050c8d16d183e98e"
-digest_verified: false
+digest_verified: true
 local_path_key: datasets.pace_oci_20240730_nrt
 used_by:
   - PACE-01
   - Q01
   - Q05
 notes: >
-  SHA-256 carried from the 2026-11-25 research handoff; digest_verified stays
-  false until recomputed against a locally staged NetCDF file in this workspace.
-  Key caveats: near-real-time (V2.0 NRT) educational granule rather than final
-  science reprocessing; geolocated swath (1710 x 1272 x 184) rather than a
-  regular lat/lon grid; Rrs covers 339-719 nm (omitting the ~762 nm oxygen
-  A-band used in GLORIA QC); preserve negative Rrs values for diagnostics;
-  cannot be fed directly into Sentinel-3 OLCI + SLSTR checkpoints.
+  SHA-256 and exact byte size (147,995,278 bytes) were recomputed and verified
+  locally against the staged NetCDF-4/HDF5 granule on 2026-11-26. Verified
+  granule properties: near-real-time (V2.0 NRT, DOI 10.5067/PACE/OCI/L2/OC_AOP/2.0)
+  educational swath covering 2024-07-30T18:11:57Z to 18:16:57Z across
+  15.71-43.92 N and -101.86 to -68.09 E (1710 x 1272 x 184 int16 packed Rrs
+  with scale_factor=2e-6, add_offset=0.05, _FillValue=-32767, valid_min=-30000,
+  valid_max=25000); wavelength_3d covers 339.0-719.0 nm at 1-3 nm spacing
+  (omitting the ~762 nm oxygen A-band used in GLORIA QC); l2_flags exposes 27
+  named flags and default quality exclusion retains 129,765 unflagged pixels
+  (129,764 finite across 400-719 nm) out of 2,175,120. Preserve negative Rrs
+  values for diagnostics; cannot be fed directly into Sentinel-3 OLCI + SLSTR
+  checkpoints.

@@ -13,6 +13,7 @@ Invariants enforced (AGENTS.md rule 2):
 from __future__ import annotations
 
 import io
+import re
 import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -88,6 +89,15 @@ class GloriaTables:
                 )
 
 
+def _drop_fully_empty_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop strictly all-NA rows (e.g. trailing ',,,,,,,,' line in GLORIA_qc_flags.csv).
+
+    Rows with a missing GLORIA_ID but any non-null data cell are intentionally
+    preserved so `_validate_id_column` rejects them loudly.
+    """
+    return df.dropna(how="all")
+
+
 def _read_csv_from_zip(zf: zipfile.ZipFile, filename: str) -> pd.DataFrame:
     matches = [name for name in zf.namelist() if name.rsplit("/", 1)[-1] == filename]
     if len(matches) != 1:
@@ -95,7 +105,7 @@ def _read_csv_from_zip(zf: zipfile.ZipFile, filename: str) -> pd.DataFrame:
             f"expected exactly 1 entry named {filename!r} in zip archive, found {matches}"
         )
     text = zf.read(matches[0]).decode("utf-8")
-    return pd.read_csv(io.StringIO(text))
+    return _drop_fully_empty_rows(pd.read_csv(io.StringIO(text), low_memory=False))
 
 
 def _read_csv_from_dir(root: Path, filename: str) -> pd.DataFrame:
@@ -104,7 +114,7 @@ def _read_csv_from_dir(root: Path, filename: str) -> pd.DataFrame:
         raise GloriaDataError(
             f"expected exactly 1 file named {filename!r} under {root}, found {matches}"
         )
-    return pd.read_csv(matches[0], encoding="utf-8")
+    return _drop_fully_empty_rows(pd.read_csv(matches[0], encoding="utf-8", low_memory=False))
 
 
 def load_gloria_tables(
@@ -159,24 +169,18 @@ def load_gloria_tables(
     canonical_order = meta_ids_s
     meta_aligned = meta.copy()
     meta_aligned[id_col] = canonical_order
-    rrs_aligned = (
-        rrs.assign(**{id_col: rrs_ids_s})
-        .set_index(id_col)
-        .loc[canonical_order]
-        .reset_index()
-    )
+    rrs_indexed = rrs.copy()
+    rrs_indexed[id_col] = rrs_ids_s
+    rrs_aligned = rrs_indexed.set_index(id_col).loc[canonical_order].copy().reset_index()
 
     qc_aligned: pd.DataFrame | None = None
     if qc_flags is not None:
         qc_ids_s = _validate_id_column(qc_flags, table_name="GLORIA_qc_flags.csv", id_col=id_col)
         if set(qc_ids_s) != meta_ids:
             raise GloriaDataError("GLORIA_ID mismatch between metadata and QC flags tables")
-        qc_aligned = (
-            qc_flags.assign(**{id_col: qc_ids_s})
-            .set_index(id_col)
-            .loc[canonical_order]
-            .reset_index()
-        )
+        qc_indexed = qc_flags.copy()
+        qc_indexed[id_col] = qc_ids_s
+        qc_aligned = qc_indexed.set_index(id_col).loc[canonical_order].copy().reset_index()
 
     return GloriaTables(
         meta=meta_aligned.reset_index(drop=True),
@@ -276,44 +280,76 @@ def summarize_qc_flags(
     )
 
 
+_ALH_WORD_RE = re.compile(r"\balh\b", re.IGNORECASE)
+
+
 def identify_optically_derived_chla(
     meta_df: pd.DataFrame,
     *,
     optically_derived_dataset_ids: Sequence[str] | None = None,
+    use_configured_dataset_ids: bool = True,
+    config: Mapping[str, Any] | None = None,
 ) -> np.ndarray:
     """Identify observations whose Chla target is optically inferred (e.g., Lake Geneva Thetis).
 
-    Matches either:
+    Matches any of:
     1. Explicit `Dataset_ID` values supplied via `optically_derived_dataset_ids`
-       (recommended when cross-referencing `GLORIA_variables_and_methods.xlsx`), or
+       and/or `gloria.optically_derived_chla_dataset_ids` in `config/qc_thresholds.yaml`
+       (which pins `'OdermattD_CH_Eawag'`, verified from `GLORIA_variables_and_methods.xlsx`),
     2. Case-insensitive metadata markers `'thetis'`, `'line height'`, or
-       `'line-height'` in `Dataset_ID`, `Site_name`, `Chla_method`, `Chla_note`,
-       or `Comments`.
+       `'line-height'` in `Dataset_ID`, `Site_name`, `Chl_method`, `Chla_method`,
+       `Chla_note`, or `Comments`, or
+    3. Word-boundary `'aLH'` (absorption line height, e.g., `'Eawag Chl - aLH'`)
+       in `Chl_method` or `Chla_method`.
     """
     n = len(meta_df)
     mask = np.zeros(n, dtype=bool)
 
-    if optically_derived_dataset_ids:
-        if "Dataset_ID" not in meta_df.columns:
+    target_ids: set[str] = set()
+    if use_configured_dataset_ids:
+        cfg = load_qc_thresholds() if config is None else dict(config)
+        configured = get_threshold(cfg, "gloria.optically_derived_chla_dataset_ids")
+        if not isinstance(configured, Sequence) or isinstance(configured, (str, bytes)):
             raise GloriaDataError(
-                "optically_derived_dataset_ids provided but 'Dataset_ID' column is absent"
+                "gloria.optically_derived_chla_dataset_ids must be a sequence of Dataset_ID strings"
             )
-        target_ids = {str(x).strip() for x in optically_derived_dataset_ids if str(x).strip()}
-        ds_clean = meta_df["Dataset_ID"].where(meta_df["Dataset_ID"].notna(), "").astype(str).str.strip()
+        target_ids.update(str(x).strip() for x in configured if str(x).strip())
+
+    explicit_ids = {
+        str(x).strip()
+        for x in (optically_derived_dataset_ids or ())
+        if str(x).strip()
+    }
+    if explicit_ids and "Dataset_ID" not in meta_df.columns:
+        raise GloriaDataError(
+            "optically_derived_dataset_ids provided but 'Dataset_ID' column is absent"
+        )
+    target_ids.update(explicit_ids)
+
+    if target_ids and "Dataset_ID" in meta_df.columns:
+        ds_clean = (
+            meta_df["Dataset_ID"]
+            .where(meta_df["Dataset_ID"].notna(), "")
+            .astype(str)
+            .str.strip()
+        )
         mask |= ds_clean.isin(target_ids).to_numpy(dtype=bool)
 
     candidate_cols = [
         col
-        for col in ("Dataset_ID", "Site_name", "Chla_method", "Chla_note", "Comments")
+        for col in ("Dataset_ID", "Site_name", "Chl_method", "Chla_method", "Chla_note", "Comments")
         if col in meta_df.columns
     ]
     for col in candidate_cols:
-        series = meta_df[col].fillna("").astype(str).str.lower()
+        series = meta_df[col].fillna("").astype(str)
+        lower = series.str.lower()
         hit = (
-            series.str.contains("thetis", regex=False)
-            | series.str.contains("line height", regex=False)
-            | series.str.contains("line-height", regex=False)
+            lower.str.contains("thetis", regex=False)
+            | lower.str.contains("line height", regex=False)
+            | lower.str.contains("line-height", regex=False)
         )
+        if col in ("Chl_method", "Chla_method"):
+            hit = hit | series.str.contains(_ALH_WORD_RE)
         mask |= hit.to_numpy(dtype=bool)
     return mask
 
@@ -391,6 +427,7 @@ def build_target_cohort(
         identify_optically_derived_chla(
             tables.meta,
             optically_derived_dataset_ids=optically_derived_dataset_ids,
+            config=config,
         )
         if (target_col == "Chla" and exclude_optically_derived_chla)
         else np.zeros(n_total, dtype=bool)

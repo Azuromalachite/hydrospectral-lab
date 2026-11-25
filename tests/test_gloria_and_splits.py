@@ -77,7 +77,8 @@ def _make_synthetic_gloria_zip(path: Path) -> Path:
     with zipfile.ZipFile(path, "w") as zf:
         zf.writestr("GLORIA-2022/GLORIA_meta_and_lab.csv", meta.to_csv(index=False))
         zf.writestr("GLORIA-2022/GLORIA_Rrs.csv", rrs.to_csv(index=False))
-        zf.writestr("GLORIA-2022/GLORIA_qc_flags.csv", qc.to_csv(index=False))
+        # Append a trailing all-empty CSV row mirroring real PANGAEA GLORIA_qc_flags.csv.
+        zf.writestr("GLORIA-2022/GLORIA_qc_flags.csv", qc.to_csv(index=False) + ",,,,\n")
     return path
 
 
@@ -161,9 +162,33 @@ def test_gloria_refuses_duplicate_ids_and_directory_expected_sha256(tmp_path: Pa
     with pytest.raises(GloriaDataError, match="cannot be verified against an extracted directory"):
         load_gloria_tables(d, expected_sha256="a" * 64, include_qc_flags=False)
 
+    # Real-archive regression: a non-empty row with missing GLORIA_ID must STILL raise (not be dropped).
+    (d / "GLORIA_qc_flags.csv").write_text(
+        "GLORIA_ID,Baseline_shift\nA,0\nB,0\n,1\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(GloriaDataError, match="contains null values in 'GLORIA_ID'"):
+        load_gloria_tables(d, include_qc_flags=True)
+
     (d / "GLORIA_meta_and_lab.csv").write_text("GLORIA_ID,Country,Site_name,Chla\nA,VN,R,1\nA,VN,R,2\n", encoding="utf-8")
     with pytest.raises(GloriaDataError, match="duplicate 'GLORIA_ID'"):
         load_gloria_tables(d, include_qc_flags=False)
+
+
+def test_identify_optically_derived_chla_pins_real_gloria_eawag_alh_without_false_positives() -> None:
+    from hydrospectral.gloria import identify_optically_derived_chla
+
+    df = pd.DataFrame(
+        [
+            {"Dataset_ID": "OdermattD_CH_Eawag", "Site_name": "Lake Geneva", "Chl_method": "Eawag Chl - aLH"},
+            {"Dataset_ID": "OdermattD_CH_Eawag", "Site_name": "Lake Geneva", "Chl_method": None},
+            {"Dataset_ID": "Other_Optical_DS", "Site_name": "Lake X", "Chl_method": "Custom aLH method"},
+            {"Dataset_ID": "SpyrakosE_GB_STIR", "Site_name": "Lake Geneva", "Chl_method": "ISO 10260:1992"},
+            {"Dataset_ID": "Other_Lab_DS", "Site_name": "Salhouse Broad", "Chl_method": "Salhouse fluorometry"},
+        ]
+    )
+    hits = identify_optically_derived_chla(df)
+    assert hits.tolist() == [True, True, True, False, False]
 
 
 def test_splits_prevent_leakage_nan_bypasses_and_temporal_precision_bugs() -> None:

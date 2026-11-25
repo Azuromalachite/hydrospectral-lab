@@ -34,6 +34,9 @@ def test_committed_qc_thresholds_match_published_constants() -> None:
     assert get_threshold(cfg, "gloria.complete_benchmark_window_nm.min_nm") == 400
     assert get_threshold(cfg, "gloria.complete_benchmark_window_nm.max_nm") == 800
     assert get_threshold(cfg, "gloria.oxygen_a_band_artefact_nm") == 762
+    assert get_threshold(cfg, "gloria.optically_derived_chla_dataset_ids") == [
+        "OdermattD_CH_Eawag"
+    ]
     assert get_threshold(cfg, "avw.visible_window_nm.min_nm") == 400
     assert get_threshold(cfg, "avw.visible_window_nm.max_nm") == 700
     assert get_threshold(cfg, "qwip.ndi_wavelengths_nm") == [492, 665]
@@ -125,13 +128,17 @@ def test_example_manifest_is_refused_as_active_source() -> None:
     assert "src.example-template" not in active
     assert "src.gloria-2022" in active
     assert "src.pace-oci-20240730-nrt" in active
-    assert active["src.gloria-2022"]["digest_verified"] is False
+    assert active["src.gloria-2022"]["digest_verified"] is True
+    assert active["src.gloria-2022"]["bytes"] == 58956647
+    assert active["src.gloria-2022"]["retrieved_utc"] == "2026-11-26"
     assert active["src.gloria-2022"]["version_string"] == "not declared"
     assert (
         active["src.gloria-2022"]["sha256"]
         == "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14"
     )
-    assert active["src.pace-oci-20240730-nrt"]["digest_verified"] is False
+    assert active["src.pace-oci-20240730-nrt"]["digest_verified"] is True
+    assert active["src.pace-oci-20240730-nrt"]["bytes"] == 147995278
+    assert active["src.pace-oci-20240730-nrt"]["retrieved_utc"] == "2026-11-26"
     assert (
         active["src.pace-oci-20240730-nrt"]["sha256"]
         == "db38c89499f33603de850e1b321e1adbdbcd0609ebc7c532050c8d16d183e98e"
@@ -199,3 +206,34 @@ def test_active_sources_rejects_duplicate_ids_and_non_yaml_files(tmp_path: Path)
     (tmp_path / "stray.yml").write_text(baseline, encoding="utf-8")
     with pytest.raises(SourceManifestError, match="unexpected non-.yaml entry"):
         load_active_sources(tmp_path)
+
+
+def test_committed_result_manifests_are_valid_and_match_hashes() -> None:
+    import json
+    from hydrospectral.provenance import sha256_file, validate_manifest
+
+    repo_root = DEFAULT_SOURCES_DIR.parent.parent
+    result_manifests = sorted((repo_root / "results").rglob("manifest.json"))
+    assert len(result_manifests) >= 1
+
+    active_sources = load_active_sources()
+    for mpath in result_manifests:
+        manifest = json.loads(mpath.read_text(encoding="utf-8"))
+        validate_manifest(manifest)
+
+        # Verify recorded script hash matches committed script/notebook on disk.
+        script_file = repo_root / manifest["script"]["path"]
+        assert script_file.is_file(), f"missing script referenced by {mpath}: {script_file}"
+        assert sha256_file(script_file) == manifest["script"]["sha256"]
+
+        # Verify recorded input hashes match committed active source manifests.
+        for src_id, recorded_sha in manifest["inputs_sha256"].items():
+            assert src_id in active_sources
+            assert active_sources[src_id]["sha256"] == recorded_sha
+
+        # Verify any recorded output CSV hashes match committed CSVs on disk.
+        out_hashes = manifest.get("extra", {}).get("output_csv_sha256", {})
+        for csv_name, expected_sha in out_hashes.items():
+            csv_path = mpath.parent / csv_name
+            assert csv_path.is_file(), f"missing output CSV {csv_path}"
+            assert sha256_file(csv_path) == expected_sha
