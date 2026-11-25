@@ -2,7 +2,7 @@
 
 Fast, deterministic Python checks guarding reusable scientific logic in [`src/`](../src/), data-hygiene rules, and retained result manifests.
 
-## Principles (adapted from `kvis-econ-games-2026`)
+## Principles
 
 1. **Every check must be able to fail.** Verify new checks by introducing a deliberate planted defect in a temporary copy (e.g., shuffling `GLORIA_ID` row order, leaking a `Site_name` across train/test folds, or dropping an illuminant weight in CIE XYZ integration) and confirming the test fails.
 2. **Never copy the formula under test.** Compute expected values from independent analytical cases (e.g., flat equiradiance spectrum -> CIE illuminant white point; constant $R_{rs}$ -> exact analytical harmonic-mean AVW; synthetic step spectrum -> exact trapezoidal SRF integral) rather than duplicating implementation expressions.

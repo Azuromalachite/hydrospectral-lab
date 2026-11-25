@@ -1,0 +1,18 @@
+id: src.example-template
+logical_name: Worked example source manifest (not a real dataset)
+source: https://example.org/datasets/worked-example.nc
+discovered_via: null
+license: CC-BY-4.0
+version_string: not declared
+record_count: null
+retrieved_utc: null
+bytes: null
+sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+digest_verified: false
+local_path_key: datasets.pace_granules_dir
+used_by: []
+notes: >
+  Worked template demonstrating schema shape. Validators accept its JSON Schema
+  structure and explicitly reject it as an active dataset record because
+  example is true.
+example: true

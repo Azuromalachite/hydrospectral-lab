@@ -1,0 +1,32 @@
+# Published radiometric and quality-control parameters used across analyses.
+# Scripts load values from here via hydrospectral.thresholds rather than
+# hardcoding silent defaults in multiple notebooks or functions.
+# Changing any value requires updating pre-registrations/tests or adding an
+# entry in docs/decisions.md.
+
+gloria:
+  interpolated_grid_nm:
+    min_nm: 350
+    max_nm: 900
+    step_nm: 1
+  complete_benchmark_window_nm:
+    min_nm: 400
+    max_nm: 800
+  oxygen_a_band_artefact_nm: 762
+
+avw:
+  # Vandermeulen et al. (2020), DOI: 10.1016/j.rse.2020.111900
+  visible_window_nm:
+    min_nm: 400
+    max_nm: 700
+
+qwip:
+  # Dierssen et al. (2022), DOI: 10.3389/frsen.2022.869611; Lehmann et al. (2023)
+  # Exact 4th-order AVW polynomial coefficients and sign convention to be pinned
+  # directly from Zenodo 10.5281/zenodo.7373840 when implementing OPT-06.
+  ndi_wavelengths_nm: [492, 665]
+  max_abs_deviation: 0.2
+
+screening_geometry:
+  # Illustrative conservative footprint screening in docs/aquatic-hyperspectral-handoff-2026-11-25.md §3.1
+  default_bank_buffer_m: 20.0

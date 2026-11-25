@@ -7,6 +7,8 @@
 *.yaml text eol=lf
 *.cff text eol=lf
 *.csv text eol=lf
+*.toml text eol=lf
+uv.lock text eol=lf
 
 *.png binary
 *.jpg binary

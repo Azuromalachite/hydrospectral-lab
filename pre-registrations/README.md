@@ -2,7 +2,7 @@
 
 Confirmatory experiments (such as `HS-R02` official SRF compression, `OPT-19` global vs. OWT-specific retrieval, or `Q08` / `EA-R04` `GLORIA-Context` landscape ablations) commit a dated protocol here **before** running test evaluations. Purely educational walkthroughs (`Q01`–`Q05`) do not need formal pre-registration unless making a comparative performance claim, and remain labelled `exploratory`.
 
-## Required sections (adapted from `kvis-econ-games-2026`)
+## Required sections
 
 1. **Header:** Date, experiment ID(s) (preserving handoff namespaces), author, and status (`PURSUE` / `DRAFT`).
 2. **Seed observation & prior exposure:** What motivated the test, and an explicit disclosure of any exploratory runs, tutorials, or summary statistics already seen on the same dataset ("you cannot un-see prior results").

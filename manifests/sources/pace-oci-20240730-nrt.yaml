@@ -1,0 +1,24 @@
+id: src.pace-oci-20240730-nrt
+logical_name: NASA PACE OCI Level-2 apparent optical properties granule (Gulf of Mexico, 2024-07-30, V2.0 NRT)
+source: https://github.com/opengeos/datasets/releases/download/hypercoast/PACE_OCI.20240730T181157.L2.OC_AOP.V2_0.NRT.nc
+discovered_via: https://pace.oceansciences.org/access_pace_data.htm
+license: NASA-Open-Data
+version_string: V2_0.NRT
+record_count: 2175120
+retrieved_utc: null
+bytes: null
+sha256: "db38c89499f33603de850e1b321e1adbdbcd0609ebc7c532050c8d16d183e98e"
+digest_verified: false
+local_path_key: datasets.pace_oci_20240730_nrt
+used_by:
+  - PACE-01
+  - Q01
+  - Q05
+notes: >
+  SHA-256 carried from the 2026-11-25 research handoff; digest_verified stays
+  false until recomputed against a locally staged NetCDF file in this workspace.
+  Key caveats: near-real-time (V2.0 NRT) educational granule rather than final
+  science reprocessing; geolocated swath (1710 x 1272 x 184) rather than a
+  regular lat/lon grid; Rrs covers 339-719 nm (omitting the ~762 nm oxygen
+  A-band used in GLORIA QC); preserve negative Rrs values for diagnostics;
+  cannot be fed directly into Sentinel-3 OLCI + SLSTR checkpoints.

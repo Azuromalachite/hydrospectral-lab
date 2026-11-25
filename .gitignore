@@ -29,7 +29,9 @@ ENV/
 .mypy_cache/
 .ipynb_checkpoints/
 
-# Credentials, tokens & environment files
+# Credentials, tokens, local paths & environment files
+config/local_paths.yaml
+!config/local_paths.example.yaml
 .env
 .env.*
 !.env.example
