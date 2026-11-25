@@ -34,6 +34,9 @@ def test_committed_qc_thresholds_match_published_constants() -> None:
     assert get_threshold(cfg, "gloria.complete_benchmark_window_nm.min_nm") == 400
     assert get_threshold(cfg, "gloria.complete_benchmark_window_nm.max_nm") == 800
     assert get_threshold(cfg, "gloria.oxygen_a_band_artefact_nm") == 762
+    assert get_threshold(cfg, "gloria.optically_derived_chla_dataset_ids") == [
+        "OdermattD_CH_Eawag"
+    ]
     assert get_threshold(cfg, "avw.visible_window_nm.min_nm") == 400
     assert get_threshold(cfg, "avw.visible_window_nm.max_nm") == 700
     assert get_threshold(cfg, "qwip.ndi_wavelengths_nm") == [492, 665]
@@ -125,13 +128,17 @@ def test_example_manifest_is_refused_as_active_source() -> None:
     assert "src.example-template" not in active
     assert "src.gloria-2022" in active
     assert "src.pace-oci-20240730-nrt" in active
-    assert active["src.gloria-2022"]["digest_verified"] is False
+    assert active["src.gloria-2022"]["digest_verified"] is True
+    assert active["src.gloria-2022"]["bytes"] == 58956647
+    assert active["src.gloria-2022"]["retrieved_utc"] == "2026-11-26"
     assert active["src.gloria-2022"]["version_string"] == "not declared"
     assert (
         active["src.gloria-2022"]["sha256"]
         == "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14"
     )
-    assert active["src.pace-oci-20240730-nrt"]["digest_verified"] is False
+    assert active["src.pace-oci-20240730-nrt"]["digest_verified"] is True
+    assert active["src.pace-oci-20240730-nrt"]["bytes"] == 147995278
+    assert active["src.pace-oci-20240730-nrt"]["retrieved_utc"] == "2026-11-26"
     assert (
         active["src.pace-oci-20240730-nrt"]["sha256"]
         == "db38c89499f33603de850e1b321e1adbdbcd0609ebc7c532050c8d16d183e98e"

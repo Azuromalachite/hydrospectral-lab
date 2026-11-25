@@ -13,6 +13,12 @@ gloria:
     min_nm: 400
     max_nm: 800
   oxygen_a_band_artefact_nm: 762
+  optically_derived_chla_dataset_ids:
+    # Verified from GLORIA_variables_and_methods.xlsx ('Chla methods' sheet):
+    # OdermattD_CH_Eawag (Lake Geneva, n=290) uses Chl_method='Eawag Chl - aLH'
+    # (WetLabs AC-S & ECO Triplet BBFL2W absorption line height;
+    # Roesler & Barnard 2013; Minaudo et al. 2021).
+    - OdermattD_CH_Eawag
 
 avw:
   # Vandermeulen et al. (2020), DOI: 10.1016/j.rse.2020.111900

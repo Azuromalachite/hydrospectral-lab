@@ -5,10 +5,10 @@ discovered_via: https://doi.org/10.1038/s41597-023-01973-y
 license: CC-BY-4.0
 version_string: not declared
 record_count: 7572
-retrieved_utc: null
-bytes: null
+retrieved_utc: "2026-11-26"
+bytes: 58956647
 sha256: "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14"
-digest_verified: false
+digest_verified: true
 local_path_key: datasets.gloria_2022_zip
 used_by:
   - HS-R01
@@ -18,13 +18,19 @@ used_by:
 notes: >
   PANGAEA.948492 distributes the archive as GLORIA-2022.zip without a separate
   internal version field in the CSV tables, so version_string is recorded as
-  'not declared'. Expected SHA-256 and record_count (7,572 spectra) are carried
-  from the 2026-11-25 research handoff; digest_verified stays false until
-  recomputed against a locally staged archive in this workspace. Key caveats:
-  join strictly on GLORIA_ID; 1 nm grid (350-900 nm) is interpolated from
-  instruments with 1-10 nm native resolution (median 4.9 nm); rivers are only
-  3.3% (249/7572) with zero Thai observations; CSV audit shows 30 country
-  labels vs 31 reported in the paper; missing QC flags indicate unmeasured
-  wavelengths rather than passed tests; Lake Geneva Thetis profiler Chla values
-  are optically inferred and must be isolated from reflectance-to-Chla
-  benchmarks to avoid target circularity.
+  'not declared'. SHA-256 and exact byte size (58,956,647 bytes) were recomputed
+  and verified locally against the staged archive on 2026-11-26. Real-archive
+  audit findings: 7,572 spectra across 54 Dataset_IDs and 30 distinct non-null
+  ISO-3166 Country/Country_code labels (zero missing values; Country='France'/FR
+  subsumes 254 South American observations at Site_name='Guiana' near 5.0 N,
+  52.3 W, plausibly accounting for the 31-country figure in Lehmann et al. 2023);
+  GLORIA_qc_flags.csv contains one trailing all-empty line (',,,,,,,,') after
+  row 7,572 and its Flagged column agrees 100% with the union of the 7 individual
+  QC flags (1,779 flagged, 5,793 unflagged); Lake Geneva optically derived Chla
+  is pinned from GLORIA_variables_and_methods.xlsx ('Chla methods') as
+  Dataset_ID='OdermattD_CH_Eawag' (Chl_method='Eawag Chl - aLH', WetLabs AC-S
+  absorption line height, n=290), distinct from SpyrakosE_GB_STIR Lake Geneva
+  lab spectrophotometry (n=24). Join strictly on GLORIA_ID; 1 nm grid (350-900 nm)
+  is interpolated from 1-10 nm native instruments (median 4.9 nm); rivers are 3.3%
+  (249/7,572) with zero Thai observations; missing QC flags indicate unmeasured
+  wavelengths rather than passed tests.
