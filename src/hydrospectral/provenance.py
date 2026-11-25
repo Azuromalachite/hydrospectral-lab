@@ -7,10 +7,15 @@ import importlib.metadata
 import json
 import platform
 import re
+import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+MEASUREMENT_CONTRACT = "hydrospectral.numeric/1"
+MEASUREMENT_CONTRACTS = (MEASUREMENT_CONTRACT,)
+CONTRACT_BY_RELEASE: dict[str, str] = {}
 
 VALID_EVIDENCE_STATUSES = frozenset(
     {"provenance-incomplete", "exploratory", "reproduced"}
@@ -30,6 +35,7 @@ DEFAULT_RUNTIME_PACKAGES = (
 )
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_SHORT_KEY_RE = re.compile(r"^[0-9a-f]{16,64}$")
 
 
 class ProvenanceError(ValueError):
@@ -161,6 +167,117 @@ def _check_no_forbidden_keys(obj: Any, *, prefix: str = "") -> None:
             _check_no_forbidden_keys(item, prefix=f"{prefix}[{idx}]")
 
 
+def compute_cohort_key(
+    *,
+    inputs_sha256: Mapping[str, str],
+    target_col: str | None,
+    wavelength_window_nm: Sequence[float],
+    qc_policy: Mapping[str, Any],
+    split_spec: Mapping[str, Any] | None = None,
+    srf_spec: str | None = None,
+    extra: Mapping[str, Any] | None = None,
+) -> str:
+    """Compute a deterministic 16-char hex cohort_key for apples-to-apples evaluation gating.
+
+    Analogous to `espmap`'s `analysis_key`: two benchmark runs or model cells
+    may only be compared directly when their `cohort_key` matches.
+    """
+    if not isinstance(inputs_sha256, Mapping) or not inputs_sha256:
+        raise ProvenanceError("inputs_sha256 must be a non-empty mapping")
+    norm_inputs: dict[str, str] = {}
+    for label, digest in sorted(inputs_sha256.items()):
+        _assert_sha256(digest, field_name=f"inputs_sha256[{label!r}]")
+        norm_inputs[str(label)] = digest
+    wl = [float(x) for x in wavelength_window_nm]
+    if len(wl) < 2 or not all(x > 0 for x in wl):
+        raise ProvenanceError("wavelength_window_nm must contain at least [min_nm, max_nm] > 0")
+    if not isinstance(qc_policy, Mapping) or not qc_policy:
+        raise ProvenanceError("qc_policy must be a non-empty mapping")
+
+    payload: dict[str, Any] = {
+        "measurement_contract": MEASUREMENT_CONTRACT,
+        "inputs_sha256": norm_inputs,
+        "target_col": target_col,
+        "wavelength_window_nm": wl,
+        "qc_policy": dict(qc_policy),
+        "split_spec": None if split_spec is None else dict(split_spec),
+        "srf_spec": srf_spec,
+    }
+    if extra is not None:
+        payload["extra"] = dict(extra)
+    try:
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise ProvenanceError(f"cohort_key inputs are not strict JSON serializable: {exc}") from exc
+    return hashlib.sha256(encoded).hexdigest()[:16]
+
+
+def assert_matching_cohort_keys(key_a: str, key_b: str, *, context: str = "") -> None:
+    """Refuse direct comparison between two runs whose cohort_key differs."""
+    if not isinstance(key_a, str) or not isinstance(key_b, str) or key_a != key_b:
+        prefix = f"{context}: " if context else ""
+        raise ProvenanceError(
+            f"{prefix}cohort_key mismatch ({key_a!r} != {key_b!r}); "
+            "refusing direct comparison across different cohorts, targets, QC rules, or splits"
+        )
+
+
+def inspect_git_provenance(repo_root: Path, script_path: str) -> dict[str, Any]:
+    """Inspect commit SHA, clean-tree state (including untracked files), and script blob presence."""
+    _assert_relative_posix_path(script_path, field_name="script_path")
+    root = Path(repo_root).resolve()
+    rel_posix = script_path.replace("\\", "/")
+
+    top_proc = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    if top_proc.returncode != 0 or Path(top_proc.stdout.strip()).resolve() != root:
+        return {"git_commit": None, "git_tree_clean": False, "script_in_commit": False}
+
+    head_proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    commit = head_proc.stdout.strip()
+    if head_proc.returncode != 0 or not _GIT_SHA_RE.match(commit):
+        return {"git_commit": None, "git_tree_clean": False, "script_in_commit": False}
+
+    status_proc = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=normal"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    tree_clean = status_proc.returncode == 0 and (not status_proc.stdout.strip())
+
+    blob_proc = subprocess.run(
+        ["git", "cat-file", "-t", f"{commit}:{rel_posix}"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    script_in_commit = blob_proc.returncode == 0 and blob_proc.stdout.strip() == "blob"
+
+    return {
+        "git_commit": commit,
+        "git_tree_clean": tree_clean,
+        "script_in_commit": script_in_commit,
+    }
+
+
 def build_manifest(
     *,
     experiment_id: str,
@@ -172,6 +289,9 @@ def build_manifest(
     counts: Mapping[str, CohortCounts],
     units: Mapping[str, str],
     git_commit: str | None = None,
+    git_tree_clean: bool | None = None,
+    cohort_key: str | None = None,
+    render_key: str | None = None,
     random_seed: int | None = None,
     pairing_rule: str = "",
     prior_exposure: str | None = None,
@@ -208,6 +328,7 @@ def build_manifest(
 
     manifest: dict[str, Any] = {
         "schema_version": 1,
+        "measurement_contract": MEASUREMENT_CONTRACT,
         "experiment_id": experiment_id.strip(),
         "title": title.strip(),
         "status": status,
@@ -226,6 +347,18 @@ def build_manifest(
         "prior_exposure": prior_exposure,
         "runtime": dict(runtime) if runtime is not None else collect_runtime_info(),
     }
+    if git_tree_clean is not None:
+        if not isinstance(git_tree_clean, bool):
+            raise ProvenanceError(f"git_tree_clean must be bool or null, got {git_tree_clean!r}")
+        manifest["git_tree_clean"] = git_tree_clean
+    if cohort_key is not None:
+        if not isinstance(cohort_key, str) or not _SHORT_KEY_RE.match(cohort_key):
+            raise ProvenanceError(f"cohort_key must be 16-64 lowercase hex chars, got {cohort_key!r}")
+        manifest["cohort_key"] = cohort_key
+    if render_key is not None:
+        if not isinstance(render_key, str) or not _SHORT_KEY_RE.match(render_key):
+            raise ProvenanceError(f"render_key must be 16-64 lowercase hex chars, got {render_key!r}")
+        manifest["render_key"] = render_key
     if extra is not None:
         manifest["extra"] = dict(extra)
 
@@ -253,6 +386,18 @@ def validate_manifest(manifest: Mapping[str, Any]) -> None:
     git_commit = manifest.get("git_commit")
     if git_commit is not None and (not isinstance(git_commit, str) or not _GIT_SHA_RE.match(git_commit)):
         raise ProvenanceError(f"manifest.git_commit must be 40 lowercase hex chars or null, got {git_commit!r}")
+    if "git_tree_clean" in manifest and manifest["git_tree_clean"] is not None:
+        if not isinstance(manifest["git_tree_clean"], bool):
+            raise ProvenanceError(
+                f"manifest.git_tree_clean must be bool or null, got {manifest['git_tree_clean']!r}"
+            )
+    for key_field in ("cohort_key", "render_key"):
+        if key_field in manifest and manifest[key_field] is not None:
+            val = manifest[key_field]
+            if not isinstance(val, str) or not _SHORT_KEY_RE.match(val):
+                raise ProvenanceError(
+                    f"manifest.{key_field} must be 16-64 lowercase hex chars, got {val!r}"
+                )
 
     script = manifest.get("script")
     if not isinstance(script, Mapping):

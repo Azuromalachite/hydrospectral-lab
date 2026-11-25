@@ -417,7 +417,6 @@ wheels = [
 
 [[package]]
 name = "hydrospectral"
-version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "colour-science" },
@@ -461,7 +460,7 @@ requires-dist = [
     { name = "scikit-learn", marker = "extra == 'ml'", specifier = ">=1.5" },
     { name = "scipy", specifier = ">=1.12" },
 ]
-provides-extras = ["ml", "geo", "viz"]
+provides-extras = ["geo", "ml", "viz"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.0" }]

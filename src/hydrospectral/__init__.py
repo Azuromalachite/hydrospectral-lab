@@ -8,6 +8,7 @@ from hydrospectral import (
     gloria,
     manifests,
     pace,
+    palette,
     provenance,
     radiometry,
     splits,
@@ -15,7 +16,7 @@ from hydrospectral import (
     thresholds,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0.dev0"
 
 __all__ = [
     "__version__",
@@ -24,6 +25,7 @@ __all__ = [
     "gloria",
     "manifests",
     "pace",
+    "palette",
     "provenance",
     "radiometry",
     "splits",
