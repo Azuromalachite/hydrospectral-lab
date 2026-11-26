@@ -20,7 +20,43 @@ def _install_script() -> str:
     return script
 
 
+def _bash() -> str:
+    """Return a POSIX bash. Windows `bash` is the WSL stub when no distro is installed."""
+    candidates = ["bash"]
+    if os.name == "nt":
+        candidates = [
+            r"C:\Program Files\Git\bin\bash.exe",
+            r"C:\Program Files\Git\usr\bin\bash.exe",
+            "bash",
+        ]
+    for candidate in candidates:
+        if candidate != "bash" and not Path(candidate).is_file():
+            continue
+        probe = subprocess.run(
+            [candidate, "-c", "echo posix-bash"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if probe.returncode == 0 and probe.stdout.strip() == "posix-bash":
+            return candidate
+    pytest.skip("no POSIX bash is available")
+
+
+def _posix(bash: str, path: Path) -> str:
+    if os.name != "nt":
+        return str(path)
+    converted = subprocess.run(
+        [bash, "-c", 'cygpath -u "$1"', "cygpath", str(path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return converted.stdout.strip()
+
+
 def _run(tmp_path: Path, cwd: Path, repo_root: str | None) -> subprocess.CompletedProcess[str]:
+    bash = _bash()
     home = tmp_path / "home"
     bindir = tmp_path / "bin"
     home.mkdir()
@@ -30,17 +66,22 @@ def _run(tmp_path: Path, cwd: Path, repo_root: str | None) -> subprocess.Complet
         "#!/bin/sh\nprintf '%s\\n' \"$PWD\" >> \"$HOME/uv-invocations\"\n"
         "printf '%s\\n' \"$*\" >> \"$HOME/uv-invocations\"\nexit 0\n",
         encoding="utf-8",
+        newline="\n",
     )
     mock.chmod(0o755)
     env = os.environ.copy()
-    env["HOME"] = str(home)
-    env["PATH"] = str(bindir) + os.pathsep + env.get("PATH", "")
+    env["HOME"] = _posix(bash, home)
+    mock_path = _posix(bash, bindir)
+    if os.name == "nt":
+        env["PATH"] = mock_path + ":/usr/bin:/bin"
+    else:
+        env["PATH"] = mock_path + os.pathsep + env.get("PATH", "")
     if repo_root is None:
         env.pop("HYDROSPECTRAL_REPO_ROOT", None)
     else:
         env["HYDROSPECTRAL_REPO_ROOT"] = repo_root
     return subprocess.run(
-        ["bash", "-c", _install_script()],
+        [bash, "-c", _install_script()],
         cwd=cwd,
         env=env,
         capture_output=True,
@@ -57,7 +98,7 @@ def _invocations(tmp_path: Path) -> str:
 
 
 def test_install_script_parses() -> None:
-    subprocess.run(["bash", "-n", "-c", _install_script()], check=True)
+    subprocess.run([_bash(), "-n", "-c", _install_script()], check=True)
 
 
 def test_refuses_unrelated_directory_before_any_uv_call(tmp_path: Path) -> None:
@@ -66,7 +107,7 @@ def test_refuses_unrelated_directory_before_any_uv_call(tmp_path: Path) -> None:
     (unrelated / "pyproject.toml").write_text('name = "other"\n', encoding="utf-8")
     missing = tmp_path / "missing-agent-checkout"
 
-    result = _run(tmp_path, unrelated, str(missing))
+    result = _run(tmp_path, unrelated, _posix(_bash(), missing))
 
     assert result.returncode == 1
     assert "refusing install" in result.stderr
@@ -96,10 +137,11 @@ def test_syncs_only_after_the_checkout_identifies_as_hydrospectral(tmp_path: Pat
     unrelated = tmp_path / "unrelated"
     unrelated.mkdir()
 
-    result = _run(tmp_path, unrelated, str(checkout))
+    checkout_for_bash = _posix(_bash(), checkout)
+    result = _run(tmp_path, unrelated, checkout_for_bash)
 
     assert result.returncode == 0, result.stderr
     assert _invocations(tmp_path).splitlines() == [
-        str(checkout),
+        checkout_for_bash,
         "sync --locked --group dev --python 3.12",
     ]
