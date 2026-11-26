@@ -23,7 +23,8 @@ Core Python library, tested QC/manifest guards, locally verified external datase
 | --- | --- | --- |
 | `hydrospectral.thresholds` | Loads committed radiometric and QC constants from [`config/qc_thresholds.yaml`](config/qc_thresholds.yaml) | Invent silent fallback defaults for undeclared thresholds |
 | `hydrospectral.manifests` | Validates [`manifests/sources/*.yaml`](manifests/README.md) against [`schemas/source_manifest.schema.json`](schemas/source_manifest.schema.json) and refuses `example: true` templates | Claim a dataset digest is verified locally until `digest_verified` is earned on disk |
-| `hydrospectral.provenance` | Computes SHA-256 hashes, enforces `CohortCounts` denominators, and writes byte-deterministic `manifest.json` records | Accept `"verified"`/`"confirmed"` labels or wall-clock timestamps |
+| `hydrospectral.provenance` | Computes SHA-256 hashes, `cohort_key` comparison guards, `MEASUREMENT_CONTRACT`, clean-tree Git provenance, `CohortCounts`, and deterministic `manifest.json` records | Accept `"verified"`/`"confirmed"` labels, mismatched `cohort_key` comparisons, or wall-clock timestamps |
+| `hydrospectral.palette` | Provides frozen MIT Crameri scientific colormaps (`batlow`, `vik`, `lajolla`) and `render_key` comparison guards for scalar geophysical maps | Use rainbow/`turbo` maps or compare plots across incompatible colour scales |
 | `hydrospectral.radiometry` | Computes $L_w$, $R_{rs}$, AVW harmonic mean, NDI/QWIP (Dierssen et al. 2022 coefficients in `config/qc_thresholds.yaml`), band ratios, derivatives, and SAM | Silently clip negative $R_{rs}$ or accept truncated AVW wavelength windows |
 | `hydrospectral.color` | Computes CIE 1931 2° XYZ, chromaticity $(x, y)$, ocean hue angle, Bradford-adapted display sRGB, and SAM OWT matching with magnitude retention | Conflate display sRGB appearance with quantitative chromaticity or taxonomic identity |
 | `hydrospectral.pace` | Reads PACE OCI L2 AOP NetCDF4/`h5py` swaths, unpacks CF-1.8 packed $R_{rs}$ (preserving negatives), decodes uint32 `l2_flags`, and builds RGB/false-colour/PCA maps | Interpolate masked pixels or treat satellite products as independent field ground truth |
@@ -34,6 +35,8 @@ Core Python library, tested QC/manifest guards, locally verified external datase
 | `tools/check_conflict_markers.py` | Scans tracked files for invalid UTF-8 and leftover Git conflict markers (with `--self-test`) | Flag legitimate Markdown `=======` setext headings or pass on an empty tree |
 | `tools/check_declared_encoding.py` | Verifies explicit non-null `encoding=` on `.py` and `.ipynb` text reads/writes across OS locales (with `--self-test`) | Skip `.github/` scripts or rely on directory names instead of `pyvenv.cfg` |
 | `tools/check_repo_hygiene.py` | Blocks tracked raw binaries/publisher PDFs, `config/local_paths.yaml`, `sprint/*` merges, and invalid source manifests (with `--self-test`) | Replace scientific review of cohort selection or validation splits |
+| `tools/check_mutants.py` | Kills planted single-line defects from [`tools/mutants.tsv`](tools/mutants.tsv) in isolated temp copies of `src/` (with `--self-test`) | Modify the working tree or allow silent invariant regressions |
+| `tools/check_release.py` | Gates `vX.Y.Z` tags against `results/releases/acceptance_v<version>.json`, `.dev0` drift, `CITATION.cff`, and post-acceptance code diffs (with `--self-test`) | Allow tagging a release whose code changed after acceptance |
 
 ### Workstream Stages
 
@@ -43,7 +46,8 @@ Core Python library, tested QC/manifest guards, locally verified external datase
 | --- | --- | --- |
 | Repository guards, QC config & source manifest schema | `IMPLEMENTED_AND_TESTED` | Enforced via `uv run pytest -q` and `tools/check_*.py --self-test` in CI |
 | Core Python library (`provenance`, `radiometry`, `color`, `pace`, `srf`, `geometry`, `gloria`, `splits`) | `IMPLEMENTED_AND_TESTED` | Verified on analytical, boundary, synthetic HDF5, and planted-defect fixtures |
-| GLORIA initial audit & 6-band rectangular baseline (`HS-R01`, `HS-R02`, `GL-R00`–`GL-R04`, `GL-R06`) | `EXPLORATORY_HANDOFF_ONLY` | Summarised in handoff §4; retained package import and independent rerun pending |
+| GLORIA initial audit & 6-band rectangular baseline (`HS-R01`, `HS-R02`, `GL-R00`–`GL-R04`, `GL-R06`) | `PRE_REGISTERED` | Exploratory baseline summarised in handoff §4; official-SRF confirmatory protocol frozen in [`2026-11-26-hs-r02-official-srf-retrieval.md`](pre-registrations/2026-11-26-hs-r02-official-srf-retrieval.md) |
+| Cross-repo aquatic chromophore & CDOM polarity milestone (`CROSS-01`) | `DRAFT_PRE_REGISTRATION` | Public [`espmap`](https://github.com/Azuromalachite/espmap) / [`arrowfield`](https://github.com/Azuromalachite/arrowfield) decoupled milestone drafted in [`2026-11-26-espmap-arrowfield-aquatic-chromophores.md`](pre-registrations/2026-11-26-espmap-arrowfield-aquatic-chromophores.md) |
 | PACE-01 Gulf of Mexico introductory reconstructions | `EXPLORATORY_HANDOFF_ONLY` | Summarised in handoff §7 (V2.0 NRT educational granule) |
 | Level 1 — `Q01` water colour & OWTs ([Q01 notebook](notebooks/Q01_water_colour_and_owts.ipynb) · [results](results/Q01_water_colour/README.md)) | `EXPLORATORY_EXECUTED` | Executed end-to-end on locally verified GLORIA + PACE-01 archives; compact CSVs, figures, and deterministic `manifest.json` retained under `results/Q01_water_colour/` (`status: exploratory`) |
 | Level 1 — `Q02`–`Q03` (AlphaEarth landscape clustering & waterway analogues) | `PLANNED` | Requires Earth Engine project ID in gitignored `config/local_paths.yaml` |

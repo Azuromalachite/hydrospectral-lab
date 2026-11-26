@@ -9,13 +9,13 @@
 
 | File | Description |
 | --- | --- |
-| [`manifest.json`](manifest.json) | Deterministic provenance record (`git_commit`, script/input/CSV SHA-256s, denominators, units, runtime) |
+| [`manifest.json`](manifest.json) | Deterministic provenance record (`git_commit`, `git_tree_clean`, `measurement_contract`, `cohort_key`, `render_key`, script/input/CSV SHA-256s, denominators, units, runtime) |
 | [`gloria_color_by_water_body_type.csv`](gloria_color_by_water_body_type.csv) | GLORIA CIE 1931 2° chromaticity, Forel–Ule hue angle, AVW, and QWIP summaries by `Water_body_type` |
 | [`gloria_color_by_water_type.csv`](gloria_color_by_water_type.csv) | GLORIA colour and AVW summaries by investigator-annotated `Water_type` (1–6 plus unassigned) |
 | [`pace_swath_summary.csv`](pace_swath_summary.csv) | PACE-01 granule pixel accounting, PCA variance ratios, AVW/hue quantiles, and SAM OOD rates |
 | [`owt_archetype_summary.csv`](owt_archetype_summary.csv) | Exploratory 4-quartile GLORIA AVW archetypes applied to sampled PACE-01 pixels (with SAM angle & spectral area) |
 | [`fig01_gloria_chromaticity_and_avw.png`](fig01_gloria_chromaticity_and_avw.png) | GLORIA CIE 1931 2° chromaticity diagram (Illuminant E) and AVW vs. Forel–Ule hue angle with PACE-01 overlay |
-| [`fig02_pace01_optical_overview.png`](fig02_pace01_optical_overview.png) | PACE-01 visible RGB, false-colour red-edge RGB, trapezoidal AVW, and CIE 1931 display sRGB panels |
+| [`fig02_pace01_optical_overview.png`](fig02_pace01_optical_overview.png) | PACE-01 visible RGB, false-colour red-edge RGB, trapezoidal AVW (Crameri `batlow`, `render_key`-gated), and CIE 1931 display sRGB panels |
 
 ## Key exploratory observations
 
