@@ -1,0 +1,4 @@
+{
+  "name": "hydrospectral-lab",
+  "install": "[ ! -d '/agent/repos/hydrospectral-lab' ] || cd '/agent/repos/hydrospectral-lab' || exit $?\nset -euo pipefail\nif ! command -v uv >/dev/null 2>&1; then\n  curl -LsSf https://astral.sh/uv/install.sh | sh\nfi\nif [ -x \"${HOME}/.local/bin/uv\" ]; then\n  sudo ln -sf \"${HOME}/.local/bin/uv\" /usr/local/bin/uv\nfi\nuv sync --locked --group dev --python 3.12\n"
+}
