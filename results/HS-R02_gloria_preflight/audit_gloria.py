@@ -1,0 +1,55 @@
+"""Independent preflight only: no fitting, no held-out performance evaluation."""
+import argparse, hashlib, io, json, platform, zipfile
+from pathlib import Path
+import numpy as np
+import pandas as pd
+EXPECTED='f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14'
+FLAGS=['Noisy_red','Noisy_blue','Baseline_shift','Oxygen_signal','Negative_uv_slope','QWIP_fail','Suspect']
+WL=np.arange(400,801)
+def main():
+ p=argparse.ArgumentParser();p.add_argument('archive',type=Path);p.add_argument('out',type=Path);a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
+ with a.archive.open('rb') as f: digest=hashlib.file_digest(f,'sha256').hexdigest()
+ assert digest==EXPECTED and a.archive.stat().st_size==58956647,'archive mismatch'
+ with zipfile.ZipFile(a.archive) as z:
+  def read(name):
+   d=pd.read_csv(io.BytesIO(z.read('GLORIA_2022/GLORIA_'+name+'.csv')),low_memory=False).dropna(how='all');assert d.GLORIA_ID.notna().all() and d.GLORIA_ID.is_unique,name;return d.set_index('GLORIA_ID')
+  m=read('meta_and_lab');n=len(m);assert n==7572
+  def aligned(name):
+   d=read(name);assert set(d.index)==set(m.index),name;return d.reindex(m.index)
+  q=aligned('qc_flags')[FLAGS];assert q.isna().where(~q.isin([0,1]),True).all().all();flag=(q==1).any(axis=1).to_numpy();untested=q.isna().any(axis=1).to_numpy()
+  def array(name,prefix):return aligned(name)[[f'{prefix}_{w}' for w in WL]].to_numpy(float)
+  x=array('Rrs','Rrs');complete=np.isfinite(x).all(1);negative=(x<0).any(1);vis=x[:,:301]; avw_ok=(vis>=0).all(1)&(vis.sum(1)>0)
+  def valid(c):return m[c].notna().to_numpy()&(m[c].fillna('').astype(str).str.strip()!='').to_numpy()
+  sitevalid=valid('Country')&valid('Site_name');studyvalid=valid('Dataset_ID');site=m.Country.fillna('').str.strip()+'|'+m.Site_name.fillna('').str.strip();study=m.Dataset_ID.fillna('').str.strip()
+  dates=pd.to_datetime(m.Date_Time_UTC,format='mixed',errors='coerce',utc=True); datevalid=dates.notna().to_numpy(); context_ok=np.isfinite(m[['Latitude','Longitude']].apply(pd.to_numeric,errors='coerce')).all(axis=1).to_numpy()&datevalid
+  optical=(study=='OdermattD_CH_Eawag').to_numpy()
+  for c in ['Dataset_ID','Site_name','Chl_method','Chla_method','Chla_note','Comments']:
+   if c not in m:continue
+   s=m[c].fillna('').astype(str); hit=s.str.lower().str.contains('thetis|line height|line-height',regex=True)
+   if c in ['Chl_method','Chla_method']:hit|=s.str.contains(r'\balh\b',case=False,regex=True)
+   optical|=hit.to_numpy()
+  ratios={'Chla':(705,665),'TSS':(705,665),'aCDOM440':(560,443)}
+  records=[];exclusions=[];water=[];audit=[]
+  for target in ratios:
+   y=pd.to_numeric(m[target],errors='coerce').to_numpy();positive=np.isfinite(y)&(y>0); keep=np.ones(n,bool)
+   rules=[('missing_or_nonpositive_target',positive),('incomplete_rrs_window',complete),('qc_flagged',~flag)]
+   if target=='Chla':rules.append(('optically_derived_chla_circularity',~optical))
+   rules.append(('missing_site_group',sitevalid))
+   for reason,cond in rules:
+    exclusions.append(dict(target=target,reason=reason,excluded=int((keep&~cond).sum())));keep &= cond
+   num,den=ratios[target]; ratio_ok=(x[:,num-400]>0)&(x[:,den-400]>0)
+   b0=ratio_ok&avw_ok
+   if target=='TSS':b0 &=np.isfinite(x[:,665-400])
+   paired=keep&studyvalid&b0&context_ok
+   records.append(dict(target=target,attempted=n,completed=int(keep.sum()),excluded=int((~keep).sum()),negative_rrs=int((keep&negative).sum()),untested_qc=int((keep&untested).sum()),sites=int(site[keep].nunique()),studies=int(study[keep&studyvalid].nunique()),missing_study=int((keep&~studyvalid).sum()),missing_date=int((keep&~datevalid).sum()),b0_eligible=int((keep&b0).sum()),context_eligible=int((keep&context_ok).sum()),candidate_all_arm_paired=int(paired.sum()),paired_sites=int(site[paired].nunique()),paired_studies=int(study[paired].nunique()),river_count=int((keep&(m.Water_body_type==4)).sum())))
+   for label,count in m.Water_body_type[keep].fillna('missing').value_counts().items():water.append(dict(target=target,water_body_type=label,n=int(count)))
+   for name,mask in [('primary',keep),('no_negative',keep&~negative),('all_qc_tested',keep&~untested),('all_arm_candidate',paired)]:audit.append(dict(target=target,scenario=name,n=int(mask.sum())))
+  # Pointwise algebraic consistency, not independent validation of glint correction.
+  es=array('Es','Es');lw=array('Lw','Lw');valid_points=np.isfinite(x)&np.isfinite(es)&np.isfinite(lw)&(es>0)
+  err=np.abs(x[valid_points]-lw[valid_points]/es[valid_points]);full=valid_points.all(1);std=array('Rrs_std','Rrs_std');std_valid=np.isfinite(std)&(std>=0); mean=array('Rrs_mean','Rrs_mean')
+  radiometry=dict(n_observations=n,rrs_lw_es_any=int(valid_points.any(1).sum()),rrs_lw_es_complete_400_800=int(full.sum()),rrs_lw_es_paired_points=int(valid_points.sum()),abs_difference_quantiles_sr_inv=dict(zip(['p50','p90','p95','p99','max'],map(float,np.quantile(err,[.5,.9,.95,.99,1])))),rrs_std_any=int(std_valid.any(1).sum()),rrs_std_complete=int(std_valid.all(1).sum()),rrs_mean_and_std_complete=int((std_valid.all(1)&np.isfinite(mean).all(1)).sum()),rrs_std_p50_sr_inv=float(np.median(std[std_valid])))
+  pd.DataFrame(records).to_csv(a.out/'cohorts.csv',index=False);pd.DataFrame(exclusions).to_csv(a.out/'exclusions.csv',index=False);pd.DataFrame(water).to_csv(a.out/'waterbody_counts.csv',index=False);pd.DataFrame(audit).to_csv(a.out/'sensitivity_counts.csv',index=False)
+  (a.out/'radiometry.json').write_text(json.dumps(radiometry,indent=2)+'\n',encoding='utf-8')
+  manifest=dict(status='exploratory preflight; independent implementation; no model scores',input_sha256=digest,input_bytes=a.archive.stat().st_size,code_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),python=platform.python_version(),numpy=np.__version__,pandas=pd.__version__,n=n,flags_any=int(flag.sum()),flags_untested=int(untested.sum()),optical_chla_markers=int(optical.sum()),complete_400_800=int(complete.sum()),complete_unflagged=int((complete&~flag).sum()),thai_records=int(m.Country.fillna('').str.contains('Thailand',case=False).sum()),date_parse_rule='pandas.to_datetime(format=mixed,errors=coerce,utc=True); diagnostic only',candidate_paired_rule='both-positive ratios + nonnegative positive-sum AVW 400–700 + valid coordinates/date + valid study group; not approved')
+  (a.out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8');print(pd.DataFrame(records).to_string(index=False));print(json.dumps(radiometry,indent=2));print(json.dumps(manifest,indent=2))
+if __name__=='__main__':main()

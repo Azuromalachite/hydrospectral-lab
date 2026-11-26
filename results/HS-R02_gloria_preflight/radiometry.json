@@ -1,0 +1,17 @@
+{
+  "n_observations": 7572,
+  "rrs_lw_es_any": 1174,
+  "rrs_lw_es_complete_400_800": 864,
+  "rrs_lw_es_paired_points": 441418,
+  "abs_difference_quantiles_sr_inv": {
+    "p50": 1.5092094240998222e-16,
+    "p90": 5.0161728347368414e-06,
+    "p95": 2.497142784279507e-05,
+    "p99": 0.00038536068471533435,
+    "max": 0.0071782532670683265
+  },
+  "rrs_std_any": 2234,
+  "rrs_std_complete": 1747,
+  "rrs_mean_and_std_complete": 1747,
+  "rrs_std_p50_sr_inv": 0.00024093676521925
+}

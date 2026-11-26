@@ -1,0 +1,110 @@
+{
+  "counts": {
+    "Chla": {
+      "attempted": 7572,
+      "completed": 2840,
+      "denominator": 7572,
+      "excluded": 4732,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 987,
+        "missing_or_nonpositive_target": 2441,
+        "missing_site_group": 0,
+        "optically_derived_chla_circularity": 0,
+        "qc_flagged": 1304
+      },
+      "failed": 0
+    },
+    "TSS": {
+      "attempted": 7572,
+      "completed": 3038,
+      "denominator": 7572,
+      "excluded": 4534,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 434,
+        "missing_or_nonpositive_target": 2951,
+        "missing_site_group": 0,
+        "qc_flagged": 1149
+      },
+      "failed": 0
+    },
+    "aCDOM440": {
+      "attempted": 7572,
+      "completed": 2709,
+      "denominator": 7572,
+      "excluded": 4863,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 683,
+        "missing_or_nonpositive_target": 3185,
+        "missing_site_group": 0,
+        "qc_flagged": 995
+      },
+      "failed": 0
+    }
+  },
+  "experiment_id": "HS-R02",
+  "extra": {
+    "archive_recomputed_in_this_import": false,
+    "author_negative_rrs_in_completed": {
+      "Chla": 308,
+      "TSS": 31,
+      "aCDOM440": 264
+    },
+    "author_optical_chla_markers_archive_wide": 290,
+    "author_optical_exclusion_on_primary_chla": 0,
+    "candidate_all_arm_paired_not_approved": {
+      "Chla": 2764,
+      "TSS": 2982,
+      "aCDOM440": 2644
+    },
+    "cohort_key_by_target": {
+      "Chla": "6fe80c479ecc7e4f",
+      "TSS": "909b6a3c3eafb1b9",
+      "aCDOM440": "34c294e61f965526"
+    },
+    "committed_script_diff": "ZipFile.open(dynamic member) replaced by io.BytesIO(ZipFile.read(...)) so tools/check_declared_encoding.py accepts the file. Tables were not regenerated.",
+    "output_sha256": {
+      "audit_gloria_as_run.txt": "8b04716828be10d985857a8f9ef9671c74f6715cc24bab2779d47794ff197666",
+      "author_run_manifest.json": "b76845ef7efe0e56fd889972e5499b702e139892e3bf21d7d2cf409ec6e0ed5a",
+      "cohorts.csv": "7fecb5c6f5c970dd008276b1d9e6fd458122669cbb0f18c3e529fda0a2c1a55d",
+      "exclusions.csv": "cf06a53d8d4e6d0761081756615a7b3591386d82622fea75a84425a0b9f7386e",
+      "radiometry.json": "0a00c99f446d18731e8aec5ecea454a348830a8ecb390bf975bb10fe5e6e10a6",
+      "sensitivity_counts.csv": "3a5486c3e5b1150b41b34de323faa7d473f3094af824e353fd9a823acb669730",
+      "waterbody_counts.csv": "eb7de171c41a2ebf9da4e5c6d331adbcb3203414a4c5eca44cd67eda5b9b10b6"
+    },
+    "producing_script_sha256": "8b04716828be10d985857a8f9ef9671c74f6715cc24bab2779d47794ff197666"
+  },
+  "git_commit": null,
+  "inputs_sha256": {
+    "src.gloria-2022": "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14"
+  },
+  "measurement_contract": "hydrospectral.numeric/1",
+  "prior_exposure": "External audit imported 2026-11-26. Exploratory rectangular-band and Q01 colour results were already disclosed in the frozen protocol. This preflight's denominators are now also prior exposure. No held-out retrieval scores were seen.",
+  "randomness": {
+    "pairing_rule": "No model folds. Primary cohort is the sequential filter in the frozen HS-R02 protocol. candidate_all_arm_paired is not approved.",
+    "seed": null
+  },
+  "runtime": {
+    "implementation": "CPython",
+    "note": "Versions copied from author_run_manifest.json. This import did not rerun the archive.",
+    "packages": {
+      "numpy": "2.3.5",
+      "pandas": "2.2.3"
+    },
+    "platform": "unrecorded_by_imported_preflight",
+    "python_version": "3.13.5"
+  },
+  "schema_version": 1,
+  "script": {
+    "path": "results/HS-R02_gloria_preflight/audit_gloria.py",
+    "sha256": "f806bc2f65762049b8481f2f672de05b1c6ba0ca6564d40a39dd0d7f8e710bcf"
+  },
+  "status": "provenance-incomplete",
+  "title": "Imported GLORIA 400-800 nm cohort preflight; no retrieval scores",
+  "units": {
+    "Chla": "ug/L",
+    "Lw_over_Es": "sr^-1",
+    "Rrs": "sr^-1",
+    "TSS": "mg/L",
+    "aCDOM440": "m^-1"
+  }
+}

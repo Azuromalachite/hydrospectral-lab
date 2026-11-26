@@ -1,0 +1,18 @@
+{
+  "status": "exploratory preflight; independent implementation; no model scores",
+  "input_sha256": "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14",
+  "input_bytes": 58956647,
+  "code_sha256": "8b04716828be10d985857a8f9ef9671c74f6715cc24bab2779d47794ff197666",
+  "python": "3.13.5",
+  "numpy": "2.3.5",
+  "pandas": "2.2.3",
+  "n": 7572,
+  "flags_any": 1779,
+  "flags_untested": 6241,
+  "optical_chla_markers": 290,
+  "complete_400_800": 6208,
+  "complete_unflagged": 4528,
+  "thai_records": 0,
+  "date_parse_rule": "pandas.to_datetime(format=mixed,errors=coerce,utc=True); diagnostic only",
+  "candidate_paired_rule": "both-positive ratios + nonnegative positive-sum AVW 400\u2013700 + valid coordinates/date + valid study group; not approved"
+}

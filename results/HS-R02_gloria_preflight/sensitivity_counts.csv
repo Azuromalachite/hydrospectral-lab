@@ -1,0 +1,13 @@
+target,scenario,n
+Chla,primary,2840
+Chla,no_negative,2532
+Chla,all_qc_tested,649
+Chla,all_arm_candidate,2764
+TSS,primary,3038
+TSS,no_negative,3007
+TSS,all_qc_tested,767
+TSS,all_arm_candidate,2982
+aCDOM440,primary,2709
+aCDOM440,no_negative,2445
+aCDOM440,all_qc_tested,712
+aCDOM440,all_arm_candidate,2644
