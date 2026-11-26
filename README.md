@@ -87,7 +87,7 @@ CITATION.cff              Citation metadata for software and retained packages
 LICENSE                   MIT License (code, scripts, and tests)
 LICENSE-DOCS.md           CC BY 4.0 License (documentation, protocols, and original figures)
 pyproject.toml / uv.lock  Python >= 3.11 package metadata and locked dependencies
-.claude/skills/           Checklists for experiment review and scientific evidence audit
+.claude/skills/           Checklists for experiment review, scientific evidence audit, and adversarial research-document review
 .github/workflows/ci.yml  Automated repository guards, self-tests, and pytest checks
 config/                   Committed QC thresholds + local_paths.example.yaml template
 manifests/ & schemas/     External dataset provenance manifests and JSON Schema

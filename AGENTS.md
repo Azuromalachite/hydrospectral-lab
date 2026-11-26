@@ -67,9 +67,12 @@ Allocate GPUs only when justified for foundation-model inference or training. On
 
 ## Agent guidance
 
-Load [experiment-review](.claude/skills/experiment-review/SKILL.md) as the primary workflow guide when writing or reviewing experiments, benchmarks, notebooks, guards, or retained result packages. Load the evidence checklist alongside it whenever literature or scientific claims are involved:
+Load [experiment-review](.claude/skills/experiment-review/SKILL.md) as the primary workflow guide when writing or reviewing experiments, benchmarks, notebooks, guards, or retained result packages. Load the evidence checklist alongside it whenever literature or scientific claims are involved. Load [adversarial-research-review](.claude/skills/adversarial-research-review/SKILL.md) when the artifact is research prose (a handoff, pre-registration, proposal, review outline, manuscript, or preprint) rather than code:
 
 | Task | Guide / Checklist |
 | --- | --- |
 | Designing, running, packaging, or reviewing computational experiments and code | [experiment-review](.claude/skills/experiment-review/SKILL.md) |
 | Auditing remote-sensing, bio-optical, Earth-AI, or microbial-ecology literature and claims | [scientific-evidence-audit](.claude/skills/scientific-evidence-audit/SKILL.md) |
+| Adversarial review of research prose (handoffs, pre-registrations, proposals, manuscripts) | [adversarial-research-review](.claude/skills/adversarial-research-review/SKILL.md) |
+
+For this repository, references to `adversarial-notebook-review` in the imported `adversarial-research-review` skill mean the existing [experiment-review](.claude/skills/experiment-review/SKILL.md) skill. Use `scientific-evidence-audit` alongside either review workflow when auditing domain or literature claims. Repository rules above, including evidence status, single artifact ownership, and independent review, take precedence over generic skill guidance.
