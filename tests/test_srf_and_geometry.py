@@ -17,9 +17,13 @@ from hydrospectral.geometry import (
 )
 from hydrospectral.srf import (
     SRFError,
+    audit_srf_support,
+    build_per_band_srf_weight_matrix,
     build_rectangular_weight_matrix,
     build_srf_weight_matrix,
     convolve_spectra,
+    load_esa_s2_srf_xlsx,
+    load_esa_s3_olci_srf_nc4,
     load_srf_csv,
 )
 
@@ -116,6 +120,183 @@ def test_srf_refuses_planted_out_of_range_and_malformed_inputs(tmp_path: Path) -
     bad_csv.write_text("wavelength_nm,B2\n490,0.5\n490,0.5\n", encoding="utf-8")
     with pytest.raises(SRFError, match="strictly increasing"):
         load_srf_csv(bad_csv)
+
+
+def test_esa_s2_xlsx_and_s3_olci_nc4_loaders_and_support_audit(tmp_path: Path) -> None:
+    import zipfile
+    import h5py
+    from hydrospectral.provenance import sha256_file
+
+    # 1. Synthetic minimal ESA S2 XLSX with sparse cells (omitted zero cells must align by column letter!).
+    xlsx_path = tmp_path / "s2_srf.xlsx"
+    wl_s2 = np.arange(380.0, 861.0, 1.0)
+    b2 = _triangle_response(wl_s2, 490.0, 30.0)
+    b8 = _triangle_response(wl_s2, 830.0, 20.0)
+    rows_xml = [
+        '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c></row>'
+    ]
+    for idx, (w, r2, r8) in enumerate(zip(wl_s2, b2, b8, strict=True), start=2):
+        cells = [f'<c r="A{idx}"><v>{w:.1f}</v></c>']
+        if r2 > 0.0:
+            cells.append(f'<c r="B{idx}"><v>{r2:.8f}</v></c>')
+        if r8 > 0.0:
+            cells.append(f'<c r="C{idx}"><v>{r8:.8f}</v></c>')
+        rows_xml.append(f'<row r="{idx}">' + "".join(cells) + "</row>")
+
+    with zipfile.ZipFile(xlsx_path, "w") as xz:
+        xz.writestr(
+            "xl/sharedStrings.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            "<si><t>SR_WL</t></si><si><t>S2A_SR_AV_B2</t></si><si><t>S2A_SR_AV_B8</t></si>"
+            "</sst>",
+        )
+        xz.writestr(
+            "xl/workbook.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            '<sheets><sheet name="Spectral Responses (S2A)" sheetId="1" r:id="rId1"/></sheets>'
+            "</workbook>",
+        )
+        xz.writestr(
+            "xl/_rels/workbook.xml.rels",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Target="/xl/worksheets/sheet1.xml"/>'
+            "</Relationships>",
+        )
+        xz.writestr(
+            "xl/worksheets/sheet1.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            "<sheetData>" + "".join(rows_xml) + "</sheetData></worksheet>",
+        )
+
+    s2_sha = sha256_file(xlsx_path)
+    wl_loaded, s2_curves = load_esa_s2_srf_xlsx(xlsx_path, unit="S2A", expected_sha256=s2_sha)
+    assert list(s2_curves.keys()) == ["B2", "B8"]
+    np.testing.assert_allclose(s2_curves["B2"], b2, atol=1e-7)
+    np.testing.assert_allclose(s2_curves["B8"], b8, atol=1e-7)
+    with pytest.raises(SRFError, match="SHA-256 mismatch"):
+        load_esa_s2_srf_xlsx(xlsx_path, unit="S2A", expected_sha256="0" * 64)
+
+    target_wl = np.arange(400.0, 801.0, 1.0)
+    s2_audit = {r["band"]: r for r in audit_srf_support(target_wl, s2_curves, shared_wavelengths_nm=wl_loaded)}
+    assert s2_audit["B2"]["eligible"] is True
+    assert s2_audit["B2"]["effective_wavelength_nm"] == pytest.approx(490.0, abs=1e-6)
+    assert s2_audit["B8"]["eligible"] is False
+
+    # 2. Synthetic ESA S3A OLCI NetCDF-4 with per-band grids and realistic ~5e-8 wing endpoints.
+    nc_path = tmp_path / "olci_mean_rsr.nc4"
+    w_oa01 = np.linspace(388.0, 412.0, 200)
+    r_oa01 = _triangle_response(w_oa01, 400.0, 11.9) + 5e-8
+    w_oa02 = np.linspace(402.5, 421.2, 200)
+    r_oa02 = _triangle_response(w_oa02, 411.85, 9.0) + 5e-8
+    w_oa03 = np.linspace(851.0, 880.0, 200)
+    r_oa03 = _triangle_response(w_oa03, 865.0, 14.0) + 5e-8
+
+    with h5py.File(nc_path, "w") as h5:
+        h5.create_dataset("mean_spectral_response_function", data=np.vstack([r_oa01, r_oa02, r_oa03]))
+        h5.create_dataset(
+            "mean_spectral_response_function_wavelength", data=np.vstack([w_oa01, w_oa02, w_oa03])
+        )
+        h5.create_dataset("nominal_centre_wavelength", data=np.array([400.0, 412.5, 865.0]))
+        h5.create_dataset("bandwidth_fwhm", data=np.array([15.0, 10.0, 20.0]))
+        h5.create_dataset("srf_centre_wavelength", data=np.array([400.0, 411.85, 865.0]))
+
+    olci_sha = sha256_file(nc_path)
+    olci = load_esa_s3_olci_srf_nc4(nc_path, expected_sha256=olci_sha)
+    assert list(olci.keys()) == ["Oa01", "Oa02", "Oa03"]
+
+    # Boundary check for A03: 5e-8 wing fails at tol=1e-8, passes at tol=1e-6; Oa01/Oa03 fail at both!
+    with pytest.raises(SRFError, match="nonzero response"):
+        build_per_band_srf_weight_matrix(target_wl, olci, band_order=["Oa02"], support_rel_tol=1e-8)
+
+    olci_audit = {r["band"]: r for r in audit_srf_support(target_wl, olci, support_rel_tol=1e-6)}
+    assert olci_audit["Oa01"]["eligible"] is False
+    assert olci_audit["Oa02"]["eligible"] is True
+    assert olci_audit["Oa03"]["eligible"] is False
+
+    W_olci, names_olci = build_per_band_srf_weight_matrix(
+        target_wl, olci, band_order=["Oa02"], support_rel_tol=1e-6
+    )
+    assert names_olci == ["Oa02"]
+    assert convolve_spectra(np.full_like(target_wl, 0.02), W_olci)[0] == pytest.approx(0.02, abs=1e-12)
+
+    # Planted-defect regressions: invalid support_rel_tol, empty bands, OLCI SHA/NaN/FillValue, duplicate S2 col.
+    for bad_tol in (float("nan"), -1e-3, 1.0, True):
+        with pytest.raises(SRFError, match="support_rel_tol"):
+            build_srf_weight_matrix(target_wl, wl_loaded, {"B2": s2_curves["B2"]}, support_rel_tol=bad_tol)
+
+    with pytest.raises(SRFError, match="no sensor bands selected"):
+        load_esa_s2_srf_xlsx(xlsx_path, unit="S2A", bands=[])
+    with pytest.raises(SRFError, match="no OLCI sensor bands selected"):
+        load_esa_s3_olci_srf_nc4(nc_path, bands=[])
+    with pytest.raises(SRFError, match="SHA-256 mismatch"):
+        load_esa_s3_olci_srf_nc4(nc_path, expected_sha256="0" * 64)
+
+    # Explicit _FillValue is stripped cleanly, whereas unexpected NaN raises SRFError.
+    nc_fill = tmp_path / "olci_fill.nc4"
+    w_pad = np.concatenate([w_oa02, np.array([-999.0])])
+    r_pad = np.concatenate([r_oa02, np.array([-999.0])])
+    with h5py.File(nc_fill, "w") as h5:
+        ds_r = h5.create_dataset("mean_spectral_response_function", data=r_pad[np.newaxis, :])
+        ds_w = h5.create_dataset("mean_spectral_response_function_wavelength", data=w_pad[np.newaxis, :])
+        ds_r.attrs["_FillValue"] = -999.0
+        ds_w.attrs["_FillValue"] = -999.0
+    loaded_fill = load_esa_s3_olci_srf_nc4(nc_fill)
+    assert loaded_fill["Oa01"]["wavelengths_nm"].size == 200
+
+    nc_nan = tmp_path / "olci_nan.nc4"
+    r_bad_nan = r_oa02.copy()
+    r_bad_nan[10] = np.nan
+    with h5py.File(nc_nan, "w") as h5:
+        h5.create_dataset("mean_spectral_response_function", data=r_bad_nan[np.newaxis, :])
+        h5.create_dataset("mean_spectral_response_function_wavelength", data=w_oa02[np.newaxis, :])
+    with pytest.raises(SRFError, match="unexpected non-finite"):
+        load_esa_s3_olci_srf_nc4(nc_nan)
+
+    # Duplicate normalized S2 band header & non-numeric response cell raise SRFError.
+    dup_xlsx = tmp_path / "dup_s2.xlsx"
+    with zipfile.ZipFile(dup_xlsx, "w") as xz:
+        xz.writestr(
+            "xl/sharedStrings.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            "<si><t>SR_WL</t></si><si><t>S2A_SR_AV_B2</t></si><si><t>B2</t></si><si><t>#N/A</t></si>"
+            "</sst>",
+        )
+        xz.writestr(
+            "xl/workbook.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            '<sheets><sheet name="Spectral Responses (S2A)" sheetId="1" r:id="rId1"/></sheets>'
+            "</workbook>",
+        )
+        xz.writestr(
+            "xl/_rels/workbook.xml.rels",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Target="worksheets/sheet1.xml"/>'
+            "</Relationships>",
+        )
+        xz.writestr(
+            "xl/worksheets/sheet1.xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
+            '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c></row>'
+            '<row r="2"><c r="A2"><v>400</v></c><c r="B2"><v>0.1</v></c><c r="C2"><v>0.1</v></c></row>'
+            '<row r="3"><c r="A3"><v>401</v></c><c r="B3"><v>0.2</v></c><c r="C3"><v>0.2</v></c></row>'
+            "</sheetData></worksheet>",
+        )
+    with pytest.raises(SRFError, match="duplicate normalized band column"):
+        load_esa_s2_srf_xlsx(dup_xlsx, unit="S2A")
+
+    # Malformed empty/mismatched array in audit_srf_support returns eligible=False without raw ValueError.
+    bad_aud = audit_srf_support(target_wl, {"BAD": np.array([])}, shared_wavelengths_nm=wl_loaded)
+    assert bad_aud[0]["eligible"] is False
 
 
 def test_geometry_screening_matches_handoff_section_3_1_table() -> None:

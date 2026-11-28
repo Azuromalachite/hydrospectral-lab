@@ -1,0 +1,28 @@
+id: src.esa-s2a-msi-srf
+logical_name: ESA Copernicus Sentinel-2 MSI official Spectral Response Functions (COPE-GSEG-EOPG-TN-15-0007 v5.0)
+source: https://sentiwiki.copernicus.eu/__attachments/a_ad595cc9fa0018a4e9eb28e1e234124a751149b5933b0b8b1f6b80612eaab586/sentinel-2-spectral-response-functions-v5.xlsx?cb=0735bcc384fde7424ba8d58a19c4a9dd
+discovered_via: https://sentiwiki.copernicus.eu/web/document-library
+license: Copernicus-Open-Access
+version_string: "5.0"
+record_count: 2301
+retrieved_utc: "2026-11-28"
+bytes: 1330493
+sha256: "42be3ebd8bfcbde11c37caeb2e2fdda65fefa8d2b6f8329559b7806d02cdc9e2"
+digest_verified: true
+local_path_key: datasets.esa_s2_msi_srf_xlsx
+used_by:
+  - HS-R02
+  - GL-R08
+notes: >
+  Official ESA Copernicus S2-SRF spreadsheet (COPE-GSEG-EOPG-TN-15-0007 v5.0;
+  sheets 'Spectral Responses (S2A)', 'Spectral Responses (S2B)', and
+  'Spectral Responses (S2C)', 1 nm grid from 300 to 2600 nm, 2,301 rows).
+  SHA-256 and exact byte size (1,330,493 bytes) verified locally on 2026-11-28.
+  Support audit on [400, 800] nm via hydrospectral.srf.build_srf_weight_matrix:
+  S2A bands B1-B7 ([430, 456] nm through [770, 797] nm) are strictly contained
+  inside [400, 800] nm under all tested tolerances (0.0, 1e-8, 1e-6); B8
+  ([775, 906] nm) and B8A-B12 extend outside [400, 800] nm and are rejected.
+  Cross-check against COPE-GSEG-EOPG-TN-15-0007 v4.0 (1,339,179 bytes,
+  SHA-256 1a9edc27d692a570911a460d589f188da0fc3e27f0b0bd1ad322059c380519b0):
+  S2A curves differ by up to ~0.00943 in response amplitude, producing <=0.036%
+  median (<=0.084% p95) relative Rrs difference across GLORIA Chla (n=2,840).

@@ -10,6 +10,8 @@ machine: local-workstation   # short label recorded in run manifests
 datasets:
   gloria_2022_zip: null      # e.g. C:/data/aquatic/GLORIA-2022.zip
   pace_oci_20240730_nrt: null  # e.g. C:/data/aquatic/PACE_OCI.20240730T181157.L2.OC_AOP.V2_0.NRT.nc
+  esa_s2_msi_srf_xlsx: null  # e.g. C:/data/aquatic/sentinel-2-spectral-response-functions-v5.xlsx
+  esa_s3a_olci_srf_nc4: null # e.g. C:/data/aquatic/S3A_OL_SRF_20160713_mean_rsr.nc4
   pace_granules_dir: null    # directory holding additional NASA PACE L2 granules
   pardig_dir: null           # directory holding PARDIG precipitation files
   sentinel3_dir: null        # directory holding native Sentinel-3 OLCI + SLSTR scenes
