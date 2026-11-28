@@ -127,3 +127,20 @@ def test_nested_cv_ridge_and_hgb_prevent_test_fold_leakage() -> None:
     )
     assert np.array_equal(idx_h1, idx_h2)
     assert np.allclose(pred_h1, pred_h2, atol=1e-12)
+
+    # Temporal split regression: sites recurring across chronological cutoff must be allowed when
+    # require_outer_disjoint_groups=False while inner group CV still runs on sites within train.
+    tr_temp = np.arange(0, 60)
+    te_temp = np.arange(60, 80)
+    rec_groups = np.array([f"Site_{i % 6:02d}" for i in range(80)], dtype=object)
+    idx_t, pred_t, _ = mod.evaluate_nested_cv(
+        X,
+        y,
+        [(tr_temp, te_temp)],
+        estimator_name="Ridge",
+        inner_groups=rec_groups,
+        require_outer_disjoint_groups=False,
+        seed=2026,
+    )
+    assert np.array_equal(idx_t, te_temp)
+    assert pred_t.shape == (20,)

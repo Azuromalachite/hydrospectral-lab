@@ -424,6 +424,7 @@ def evaluate_nested_cv(
     *,
     estimator_name: str,
     inner_groups: np.ndarray | None,
+    require_outer_disjoint_groups: bool = True,
     parallel: Any | None = None,
     seed: int = SEED,
 ) -> tuple[np.ndarray, np.ndarray, list[dict[str, Any]]]:
@@ -443,7 +444,7 @@ def evaluate_nested_cv(
 
     if estimator_name == "Ridge":
         for fold_idx, (tr, te) in enumerate(outer_splits):
-            if inner_groups is not None:
+            if inner_groups is not None and require_outer_disjoint_groups:
                 assert_disjoint_groups(inner_groups, tr, te)
             X_tr, y_tr, X_te = X[tr], y_log10[tr], X[te]
             g_tr = None if inner_groups is None else inner_groups[tr]
@@ -472,7 +473,7 @@ def evaluate_nested_cv(
 
         X_f32 = np.asarray(X, dtype=np.float32)
         for fold_idx, (tr, te) in enumerate(outer_splits):
-            if inner_groups is not None:
+            if inner_groups is not None and require_outer_disjoint_groups:
                 assert_disjoint_groups(inner_groups, tr, te)
             t_fold = time.perf_counter()
             X_tr, y_tr, X_te = X_f32[tr], y_log10[tr], X_f32[te]
@@ -611,6 +612,7 @@ def _run_or_load_cell(
     *,
     estimator_name: str,
     inner_groups: np.ndarray | None,
+    require_outer_disjoint_groups: bool = True,
     parallel: Any | None,
 ) -> tuple[np.ndarray, np.ndarray, list[dict[str, Any]]]:
     if cache_dir is not None:
@@ -629,6 +631,7 @@ def _run_or_load_cell(
         outer_splits,
         estimator_name=estimator_name,
         inner_groups=inner_groups,
+        require_outer_disjoint_groups=require_outer_disjoint_groups,
         parallel=parallel,
         seed=SEED,
     )
@@ -1045,6 +1048,7 @@ def run_benchmark(
                                 sp_list,
                                 estimator_name=est_name,
                                 inner_groups=inner_g,
+                                require_outer_disjoint_groups=(sp_name in ("site_kfold", "dataset_kfold")),
                                 parallel=parallel if est_name == "HGB" else None,
                             )
                             elapsed = time.perf_counter() - t0
