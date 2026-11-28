@@ -1527,7 +1527,7 @@ def run_benchmark(
         },
         runtime=runtime_info,
     )
-    write_manifest(out_dir / "manifest.json", manifest)
+    write_manifest(manifest, out_dir / "manifest.json")
     print(f"HS-R02 complete in {time.perf_counter() - t_start:.1f}s -> {out_dir}", flush=True)
     return manifest
 
