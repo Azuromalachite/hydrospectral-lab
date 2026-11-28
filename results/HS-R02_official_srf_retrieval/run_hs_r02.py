@@ -679,51 +679,46 @@ def make_summary_figure(
 
     fig, axes = plt.subplots(2, 2, figsize=(12.5, 8.8), constrained_layout=True)
 
-    # Panel A: Equal-group log10 RMSE on primary_optical site_kfold & dataset_kfold (matched L2 for Ridge, raw/L2 for HGB)
+    # Panel A: Equal-group log10 RMSE on primary_optical site_kfold & dataset_kfold (matched L2 preprocessing for Ridge & HGB)
     ax = axes[0, 0]
     sub_a = metrics_df[
         (metrics_df["cohort_mode"] == "primary_optical")
         & (metrics_df["split"].isin(["site_kfold", "dataset_kfold"]))
     ]
     x_labels = []
-    bars_data: dict[str, list[float]] = {"S2_ref": [], "S3_ref": [], "HS_401_l2": []}
+    bars_data: dict[str, list[float]] = {"S2_SRF_l2": [], "S3_SRF_l2": [], "HS_401_l2": []}
     for t in TARGETS:
         for est in ("Ridge", "HGB"):
-            s2_arm = "S2_SRF_l2" if est == "Ridge" else "S2_SRF"
-            s3_arm = "S3_SRF_l2" if est == "Ridge" else "S3_SRF"
             for sp in ("site_kfold", "dataset_kfold"):
                 row_s = sub_a[
                     (sub_a["target"] == t)
                     & (sub_a["estimator"] == est)
                     & (sub_a["split"] == sp)
-                    & (sub_a["arm"].isin([s2_arm, s3_arm, "HS_401_l2"]))
+                    & (sub_a["arm"].isin(["S2_SRF_l2", "S3_SRF_l2", "HS_401_l2"]))
                 ]
                 if len(row_s) == 3:
                     x_labels.append(f"{t}\n{est} {'Site' if sp == 'site_kfold' else 'Study'}")
-                    bars_data["S2_ref"].append(float(row_s[row_s["arm"] == s2_arm]["equal_group_log10_rmse"].iloc[0]))
-                    bars_data["S3_ref"].append(float(row_s[row_s["arm"] == s3_arm]["equal_group_log10_rmse"].iloc[0]))
+                    bars_data["S2_SRF_l2"].append(float(row_s[row_s["arm"] == "S2_SRF_l2"]["equal_group_log10_rmse"].iloc[0]))
+                    bars_data["S3_SRF_l2"].append(float(row_s[row_s["arm"] == "S3_SRF_l2"]["equal_group_log10_rmse"].iloc[0]))
                     bars_data["HS_401_l2"].append(float(row_s[row_s["arm"] == "HS_401_l2"]["equal_group_log10_rmse"].iloc[0]))
     x = np.arange(len(x_labels))
     w = 0.26
     for i, (key, lbl) in enumerate(
-        (("S2_ref", "S2A SRF (L2 for Ridge)"), ("S3_ref", "S3A SRF (L2 for Ridge)"), ("HS_401_l2", "HS_401_l2"))
+        (("S2_SRF_l2", "S2A SRF (L2)"), ("S3_SRF_l2", "S3A SRF (L2)"), ("HS_401_l2", "HS_401 (L2)"))
     ):
         ax.bar(x + (i - 1) * w, bars_data[key], width=w, color=cols[i], label=lbl)
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, rotation=35, ha="right", fontsize=7.2)
     ax.set_ylabel("Equal-group log10 RMSE")
-    ax.set_title("A. Official S2A/S3A SRFs vs. Full 1 nm HS_401_l2 (Primary Cohort)")
-    ax.legend(frameon=False, fontsize=7.4, loc="upper left", ncol=2)
+    ax.set_title("A. Official S2A/S3A SRFs vs. Full 1 nm HS_401 (Matched L2 Scaling)")
+    ax.legend(frameon=False, fontsize=7.6, loc="upper left", ncol=3)
 
-    # Panel B: Paired cluster-bootstrap delta (matched preprocessing: Ridge HS_401_l2 - S3_SRF_l2; HGB HS_401_l2 - S3_SRF)
+    # Panel B: Paired cluster-bootstrap delta (matched preprocessing: HS_401_l2 - S3_SRF_l2 for both Ridge & HGB)
     ax = axes[0, 1]
     sub_b = deltas_df[
         (deltas_df["cohort_mode"] == "primary_optical")
         & (deltas_df["split"].isin(["site_kfold", "dataset_kfold"]))
-        & (
-            ((deltas_df["estimator"] == "Ridge") & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF_l2"))
-            | ((deltas_df["estimator"] == "HGB") & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF"))
-        )
+        & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF_l2")
     ].reset_index(drop=True)
     y_pos = np.arange(len(sub_b))
     for i, row in sub_b.iterrows():
@@ -746,7 +741,7 @@ def make_summary_figure(
         fontsize=7.6,
     )
     ax.invert_yaxis()
-    ax.set_xlabel("Delta equal-group log10 RMSE: HS_401_l2 - S3A matched ref (negative favors HS)")
+    ax.set_xlabel("Delta equal-group log10 RMSE: HS_401_l2 - S3_SRF_l2 (negative favors HS)")
     ax.set_title("B. Paired Cluster-Bootstrap 95% CIs (Matched-Preprocessing Contrasts)")
     ax.legend(frameon=False, fontsize=7.5, loc="lower left")
 
@@ -773,18 +768,18 @@ def make_summary_figure(
     ax.set_title("C. Validation-Optimism Gap & Baselines (Chla Paired Cohort)")
     ax.legend(frameon=False, fontsize=7.8, loc="upper left")
 
-    # Panel D: OOD vs In-domain & Water-body stratification (Chla HS_401_l2 Ridge site_kfold)
+    # Panel D: OOD vs In-domain & Water-body stratification (Chla matched L2: S3_SRF_l2 vs HS_401_l2, Ridge site_kfold)
     ax = axes[1, 1]
     sub_d = strat_df[
         (strat_df["target"] == "Chla")
         & (strat_df["split"] == "site_kfold")
         & (strat_df["estimator"] == "Ridge")
-        & (strat_df["arm"].isin(["S3_SRF", "HS_401_l2"]))
+        & (strat_df["arm"].isin(["S3_SRF_l2", "HS_401_l2"]))
     ]
     strata = ["in_domain", "ood", "Lake", "Coastal", "River"]
     x_d = np.arange(len(strata))
     wd = 0.34
-    for i, arm in enumerate(("S3_SRF", "HS_401_l2")):
+    for i, arm in enumerate(("S3_SRF_l2", "HS_401_l2")):
         vals = []
         ns = []
         for st in strata:
@@ -1403,7 +1398,7 @@ def run_benchmark(
         for est_name in (("Ridge", "HGB") if run_hgb else ("Ridge",)):
             pass_both_splits = True
             detail: dict[str, Any] = {}
-            s3_contrast = "HS_401_l2_vs_S3_SRF_l2" if est_name == "Ridge" else "HS_401_l2_vs_S3_SRF"
+            s3_contrast = "HS_401_l2_vs_S3_SRF_l2"
             for sp in ("site_kfold", "dataset_kfold"):
                 row_s3 = deltas_df[
                     (deltas_df["target"] == target)
@@ -1412,12 +1407,12 @@ def run_benchmark(
                     & (deltas_df["estimator"] == est_name)
                     & (deltas_df["contrast"] == s3_contrast)
                 ]
-                row_s3_l2 = deltas_df[
+                row_s3_raw = deltas_df[
                     (deltas_df["target"] == target)
                     & (deltas_df["cohort_mode"] == "primary_optical")
                     & (deltas_df["split"] == sp)
                     & (deltas_df["estimator"] == est_name)
-                    & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF_l2")
+                    & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF")
                 ]
                 row_b0 = deltas_df[
                     (deltas_df["target"] == target)
@@ -1438,24 +1433,24 @@ def run_benchmark(
                 )
                 detail[sp] = {
                     "primary_s3_contrast": s3_contrast,
-                    "delta_vs_S3_primary": None if len(row_s3) != 1 else float(row_s3["delta_hs_minus_ref"].iloc[0]),
-                    "ci_vs_S3_primary": None
+                    "delta_vs_S3_l2": None if len(row_s3) != 1 else float(row_s3["delta_hs_minus_ref"].iloc[0]),
+                    "ci_vs_S3_l2": None
                     if len(row_s3) != 1
                     else [float(row_s3["ci_low"].iloc[0]), float(row_s3["ci_high"].iloc[0])],
-                    "delta_vs_S3_l2": None if len(row_s3_l2) != 1 else float(row_s3_l2["delta_hs_minus_ref"].iloc[0]),
-                    "ci_vs_S3_l2": None
-                    if len(row_s3_l2) != 1
-                    else [float(row_s3_l2["ci_low"].iloc[0]), float(row_s3_l2["ci_high"].iloc[0])],
+                    "delta_vs_S3_raw": None if len(row_s3_raw) != 1 else float(row_s3_raw["delta_hs_minus_ref"].iloc[0]),
+                    "ci_vs_S3_raw": None
+                    if len(row_s3_raw) != 1
+                    else [float(row_s3_raw["ci_low"].iloc[0]), float(row_s3_raw["ci_high"].iloc[0])],
                     "delta_vs_B0": None if len(row_b0) != 1 else float(row_b0["delta_hs_minus_ref"].iloc[0]),
                     "ci_vs_B0": None
                     if len(row_b0) != 1
                     else [float(row_b0["ci_low"].iloc[0]), float(row_b0["ci_high"].iloc[0])],
-                    "passes_s3_003": ok_s3,
+                    "passes_s3_l2_003": ok_s3,
                     "passes_b0_003": None if len(row_b0) != 1 else ok_b0,
                 }
                 pass_both_splits = pass_both_splits and ok_s3 and (ok_b0 if len(row_b0) == 1 else True)
             decision_summary[f"{target}_{est_name}"] = {
-                "interesting_supported": pass_both_splits,
+                "interesting_supported_matched_l2": pass_both_splits,
                 "splits": detail,
             }
 
