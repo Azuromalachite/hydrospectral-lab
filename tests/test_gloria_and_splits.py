@@ -234,6 +234,15 @@ def test_splits_prevent_leakage_nan_bypasses_and_temporal_precision_bugs() -> No
     assert m["equal_group_log10_rmse"] == pytest.approx(np.sqrt(2.0), rel=1e-12)
     assert m["raw_mae"] == pytest.approx(990.0 / 4.0)
     assert m["raw_median_ae"] == pytest.approx(0.0)
+    assert m["raw_mdsa"] == pytest.approx(0.0, abs=1e-12)
+    # Hand-worked symmetric factor-of-2 error (2x overestimate and 0.5x underestimate -> exact 100% MdSA).
+    log2 = float(np.log10(2.0))
+    m_sym = compute_regression_metrics(
+        [1.0, 2.0, 0.0, 1.5],
+        [1.0 + log2, 2.0 - log2, 0.0 + log2, 1.5 - log2],
+        groups=["A", "A", "B", "B"],
+    )
+    assert m_sym["raw_mdsa"] == pytest.approx(100.0, rel=1e-12)
     with pytest.raises(SplitLeakageError, match="null/NaN"):
         compute_regression_metrics([1.0, 1.0], [1.0, 2.0], groups=["A", np.nan])
 
