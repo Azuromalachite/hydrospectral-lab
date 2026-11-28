@@ -1,0 +1,31 @@
+id: src.esa-s3a-olci-srf
+logical_name: ESA Copernicus Sentinel-3A OLCI official mean Spectral Response Functions (2016-07-13 NetCDF-4)
+source: https://sentiwiki.copernicus.eu/__attachments/a_1376b0c7651794dd4dc96b9372d6cd9142231ae04d8578f9bfc884eba902cbc3/S3A_OL_SRF_20160713_mean_rsr.nc4?cb=fe25bf278fcd53f15c2be812ba223de4
+discovered_via: https://sentiwiki.copernicus.eu/web/document-library
+license: Copernicus-Open-Access
+version_string: 20160713_mean_rsr
+record_count: 21
+retrieved_utc: "2026-11-28"
+bytes: 47804
+sha256: "e2806df83b6a874e1b5ecd98bd56c70368e4bca6c75e6c7bad6b472cdc5fef7d"
+digest_verified: true
+local_path_key: datasets.esa_s3a_olci_srf_nc4
+used_by:
+  - HS-R02
+  - GL-R08
+notes: >
+  Official ESA Sentinel-3A OLCI mean Relative Spectral Response NetCDF-4/HDF5
+  dataset (OLCI_S3A_spectral_model_v7.02_fltrd_20160713.nc4, 21 bands x 200
+  per-band wavelength samples). SHA-256 and exact byte size (47,804 bytes)
+  verified locally on 2026-11-28. Real-file support finding for HS-R02 A03:
+  across the 15 in-window bands Oa02-Oa16, peak-normalized 200-point window
+  endpoints span 1.20e-8 to 8.57e-8 (across all 21 bands Oa01-Oa21: 8.64e-9 on
+  Oa17 to 3.64e-7 on Oa21, and 1.01e-7 on Oa01), so support_rel_tol=1e-8 or
+  literal R>0 rejects all 21 bands on [400, 800] nm (Oa02-Oa16 fail the
+  interior-endpoint check while Oa01 and Oa17-Oa21 extend outside [400, 800]
+  nm). At support_rel_tol=1e-6 (1 ppm of peak), Oa02-Oa16 ([402.53, 791.12] nm,
+  15 bands) pass cleanly while Oa01 ([387.75, 411.30] nm) and Oa17-Oa21
+  ([851.20, 1043.77] nm) are cleanly excluded. Trapezoidal effective
+  wavelengths match ESA's srf_centre_wavelength to <=0.01 nm across Oa02-Oa16.
+  Oa13-Oa15 (761.25-767.50 nm, FWHM 2.6-3.7 nm) overlap the ~762 nm O2 A-band
+  and exhibit up to ~22.7% p95 discrepancy against rectangular boxcars.

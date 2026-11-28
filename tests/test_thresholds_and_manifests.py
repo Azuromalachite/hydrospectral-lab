@@ -143,6 +143,18 @@ def test_example_manifest_is_refused_as_active_source() -> None:
         active["src.pace-oci-20240730-nrt"]["sha256"]
         == "db38c89499f33603de850e1b321e1adbdbcd0609ebc7c532050c8d16d183e98e"
     )
+    assert active["src.esa-s2a-msi-srf"]["digest_verified"] is True
+    assert active["src.esa-s2a-msi-srf"]["bytes"] == 1330493
+    assert (
+        active["src.esa-s2a-msi-srf"]["sha256"]
+        == "42be3ebd8bfcbde11c37caeb2e2fdda65fefa8d2b6f8329559b7806d02cdc9e2"
+    )
+    assert active["src.esa-s3a-olci-srf"]["digest_verified"] is True
+    assert active["src.esa-s3a-olci-srf"]["bytes"] == 47804
+    assert (
+        active["src.esa-s3a-olci-srf"]["sha256"]
+        == "e2806df83b6a874e1b5ecd98bd56c70368e4bca6c75e6c7bad6b472cdc5fef7d"
+    )
 
 
 def test_notes_length_boundary_9_fails_and_10_passes() -> None:
