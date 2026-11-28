@@ -208,6 +208,10 @@ def compute_regression_metrics(
     equal_group_log_rmse = float(np.sqrt(df.groupby("group")["sq_err"].mean().mean()))
 
     raw_abs_err = np.abs((10.0 ** p) - (10.0 ** t))
+    # Median Symmetric Accuracy (Morley et al. 2018): 100 * (exp(median(|ln(y_hat / y)|)) - 1)
+    # In log10 space, |ln(y_hat / y)| = |p - t| * ln(10), so exp(median * ln(10)) = 10**median(|p - t|).
+    med_abs_log10_err = float(np.median(np.abs(p - t)))
+    raw_mdsa = float(100.0 * (10.0 ** med_abs_log10_err - 1.0))
     return {
         "n": int(t.size),
         "n_groups": int(df["group"].nunique()),
@@ -216,6 +220,7 @@ def compute_regression_metrics(
         "pooled_log10_r2": pooled_log_r2,
         "raw_mae": float(np.mean(raw_abs_err)),
         "raw_median_ae": float(np.median(raw_abs_err)),
+        "raw_mdsa": raw_mdsa,
     }
 
 
