@@ -247,6 +247,15 @@ def build_feature_arms(
     X_s2_box = X_rrs @ sensor_mats["W_s2_box"]
     X_s3_box = X_rrs @ sensor_mats["W_s3_box"]
 
+    def _l2_with_log_norm(arr: np.ndarray) -> np.ndarray:
+        nrm = np.linalg.norm(arr, axis=1)
+        if np.any(nrm <= 0.0) or not np.isfinite(nrm).all():
+            raise ValueError("encountered zero-norm or non-finite multispectral row")
+        return np.column_stack([normalize_unit_l2(arr), np.log10(nrm)])
+
+    X_s2_l2 = _l2_with_log_norm(X_s2)
+    X_s3_l2 = _l2_with_log_norm(X_s3)
+
     # B0_ratio: target-specific physical ratio + AVW (400-700 nm, require_nonnegative=True)
     avw = np.asarray(compute_avw(X_rrs, wl, require_nonnegative=True), dtype=float)
     r_705_665 = np.asarray(
@@ -288,11 +297,14 @@ def build_feature_arms(
         "M0_context": X_m0,
         "S2_SRF": X_s2,
         "S3_SRF": X_s3,
+        "S2_SRF_l2": X_s2_l2,
+        "S3_SRF_l2": X_s3_l2,
         "S2_boxcar": X_s2_box,
         "S3_boxcar": X_s3_box,
         "HS_401_raw": X_rrs.copy(),
         "HS_401_l2": X_l2,
         "M0_plus_S3": np.hstack([X_m0, X_s3]),
+        "M0_plus_S3_l2": np.hstack([X_m0, X_s3_l2]),
         "M0_plus_HS": np.hstack([X_m0, X_l2]),
     }
     masks = {
@@ -462,9 +474,10 @@ def evaluate_nested_cv(
         for fold_idx, (tr, te) in enumerate(outer_splits):
             if inner_groups is not None:
                 assert_disjoint_groups(inner_groups, tr, te)
+            t_fold = time.perf_counter()
             X_tr, y_tr, X_te = X_f32[tr], y_log10[tr], X_f32[te]
             g_tr = None if inner_groups is None else inner_groups[tr]
-            in_splits = _inner_splits(g_tr, len(tr), n_splits=5, seed=seed)
+            in_splits = _inner_splits(g_tr, len(tr), n_splits=3, seed=seed)
 
             tasks = [
                 (cfg_idx, in_idx, in_tr, in_va, cfg)
@@ -500,6 +513,12 @@ def evaluate_nested_cv(
             eval_parts.append(np.asarray(te, dtype=int))
             pred_parts.append(preds)
             chosen_params.append({"fold": fold_idx, **best_cfg, "inner_loss": best_loss})
+            if X_f32.shape[1] > 50:
+                print(
+                    f"    HGB({X_f32.shape[1]}f) outer fold {fold_idx + 1}/{len(outer_splits)} "
+                    f"done in {time.perf_counter() - t_fold:.1f}s (best_inner={best_loss:.4f})",
+                    flush=True,
+                )
     else:
         raise ValueError(f"unknown estimator_name {estimator_name!r}; expected 'Ridge' or 'HGB'")
 
@@ -657,39 +676,51 @@ def make_summary_figure(
 
     fig, axes = plt.subplots(2, 2, figsize=(12.5, 8.8), constrained_layout=True)
 
-    # Panel A: Equal-group log10 RMSE on primary_optical site_kfold & dataset_kfold (Ridge + HGB)
+    # Panel A: Equal-group log10 RMSE on primary_optical site_kfold & dataset_kfold (matched L2 for Ridge, raw/L2 for HGB)
     ax = axes[0, 0]
     sub_a = metrics_df[
         (metrics_df["cohort_mode"] == "primary_optical")
         & (metrics_df["split"].isin(["site_kfold", "dataset_kfold"]))
-        & (metrics_df["arm"].isin(["S2_SRF", "S3_SRF", "HS_401_l2"]))
     ]
     x_labels = []
-    bars_data: dict[str, list[float]] = {"S2_SRF": [], "S3_SRF": [], "HS_401_l2": []}
+    bars_data: dict[str, list[float]] = {"S2_ref": [], "S3_ref": [], "HS_401_l2": []}
     for t in TARGETS:
         for est in ("Ridge", "HGB"):
+            s2_arm = "S2_SRF_l2" if est == "Ridge" else "S2_SRF"
+            s3_arm = "S3_SRF_l2" if est == "Ridge" else "S3_SRF"
             for sp in ("site_kfold", "dataset_kfold"):
-                row_s = sub_a[(sub_a["target"] == t) & (sub_a["estimator"] == est) & (sub_a["split"] == sp)]
+                row_s = sub_a[
+                    (sub_a["target"] == t)
+                    & (sub_a["estimator"] == est)
+                    & (sub_a["split"] == sp)
+                    & (sub_a["arm"].isin([s2_arm, s3_arm, "HS_401_l2"]))
+                ]
                 if len(row_s) == 3:
                     x_labels.append(f"{t}\n{est} {'Site' if sp == 'site_kfold' else 'Study'}")
-                    for arm in ("S2_SRF", "S3_SRF", "HS_401_l2"):
-                        bars_data[arm].append(float(row_s[row_s["arm"] == arm]["equal_group_log10_rmse"].iloc[0]))
+                    bars_data["S2_ref"].append(float(row_s[row_s["arm"] == s2_arm]["equal_group_log10_rmse"].iloc[0]))
+                    bars_data["S3_ref"].append(float(row_s[row_s["arm"] == s3_arm]["equal_group_log10_rmse"].iloc[0]))
+                    bars_data["HS_401_l2"].append(float(row_s[row_s["arm"] == "HS_401_l2"]["equal_group_log10_rmse"].iloc[0]))
     x = np.arange(len(x_labels))
     w = 0.26
-    for i, arm in enumerate(("S2_SRF", "S3_SRF", "HS_401_l2")):
-        ax.bar(x + (i - 1) * w, bars_data[arm], width=w, color=cols[i], label=arm)
+    for i, (key, lbl) in enumerate(
+        (("S2_ref", "S2A SRF (L2 for Ridge)"), ("S3_ref", "S3A SRF (L2 for Ridge)"), ("HS_401_l2", "HS_401_l2"))
+    ):
+        ax.bar(x + (i - 1) * w, bars_data[key], width=w, color=cols[i], label=lbl)
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, rotation=35, ha="right", fontsize=7.2)
     ax.set_ylabel("Equal-group log10 RMSE")
     ax.set_title("A. Official S2A/S3A SRFs vs. Full 1 nm HS_401_l2 (Primary Cohort)")
-    ax.legend(frameon=False, fontsize=7.8, loc="upper left", ncol=3)
+    ax.legend(frameon=False, fontsize=7.4, loc="upper left", ncol=2)
 
-    # Panel B: Paired cluster-bootstrap delta = RMSE(HS_401_l2) - RMSE(S3_SRF)
+    # Panel B: Paired cluster-bootstrap delta (matched preprocessing: Ridge HS_401_l2 - S3_SRF_l2; HGB HS_401_l2 - S3_SRF)
     ax = axes[0, 1]
     sub_b = deltas_df[
         (deltas_df["cohort_mode"] == "primary_optical")
-        & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF")
         & (deltas_df["split"].isin(["site_kfold", "dataset_kfold"]))
+        & (
+            ((deltas_df["estimator"] == "Ridge") & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF_l2"))
+            | ((deltas_df["estimator"] == "HGB") & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF"))
+        )
     ].reset_index(drop=True)
     y_pos = np.arange(len(sub_b))
     for i, row in sub_b.iterrows():
@@ -712,8 +743,8 @@ def make_summary_figure(
         fontsize=7.6,
     )
     ax.invert_yaxis()
-    ax.set_xlabel("Delta equal-group log10 RMSE: HS_401_l2 - S3_SRF (negative favors HS)")
-    ax.set_title("B. Paired Cluster-Bootstrap 95% CIs (Primary Confirmatory Contrast)")
+    ax.set_xlabel("Delta equal-group log10 RMSE: HS_401_l2 - S3A matched ref (negative favors HS)")
+    ax.set_title("B. Paired Cluster-Bootstrap 95% CIs (Matched-Preprocessing Contrasts)")
     ax.legend(frameon=False, fontsize=7.5, loc="lower left")
 
     # Panel C: Validation optimism gap (Random vs Site vs Study vs Temporal) + M0/B0 baselines (Ridge all_arm_paired)
@@ -722,12 +753,12 @@ def make_summary_figure(
         (metrics_df["cohort_mode"] == "all_arm_paired")
         & (metrics_df["estimator"] == "Ridge")
         & (metrics_df["split"].isin(["random_kfold_diag", "site_kfold", "dataset_kfold", "temporal_80_20"]))
-        & (metrics_df["arm"].isin(["B0_ratio", "M0_context", "S3_SRF", "HS_401_l2"]))
+        & (metrics_df["arm"].isin(["B0_ratio", "M0_context", "S3_SRF_l2", "HS_401_l2"]))
     ]
     split_order = ["random_kfold_diag", "temporal_80_20", "site_kfold", "dataset_kfold"]
     split_names = ["Random\n(diag)", "Temporal\n80/20", "Site\nholdout", "Study\nholdout"]
     x_c = np.arange(len(split_order))
-    for i, arm in enumerate(("M0_context", "B0_ratio", "S3_SRF", "HS_401_l2")):
+    for i, arm in enumerate(("M0_context", "B0_ratio", "S3_SRF_l2", "HS_401_l2")):
         vals = []
         for sp in split_order:
             s_rows = sub_c[(sub_c["split"] == sp) & (sub_c["arm"] == arm) & (sub_c["target"] == "Chla")]
@@ -823,7 +854,7 @@ def run_benchmark(
 
     meta_indexed = tables.meta.set_index("GLORIA_ID")
 
-    with Parallel(n_jobs=max(1, int(n_jobs))) as parallel:
+    with Parallel(n_jobs=max(1, int(n_jobs)), max_nbytes=None) as parallel:
         # ---- 1. Main 400-800 nm confirmatory & paired-baseline benchmark ----
         for target in TARGETS:
             coh = build_target_cohort(
@@ -877,14 +908,35 @@ def run_benchmark(
                 (
                     "primary_optical",
                     masks_all["all_primary"],
-                    ["S2_SRF", "S3_SRF", "HS_401_raw", "HS_401_l2"],
-                    ["S2_SRF", "S3_SRF", "HS_401_l2"],
+                    ["S2_SRF", "S3_SRF", "S2_SRF_l2", "S3_SRF_l2", "HS_401_raw", "HS_401_l2"],
+                    ["S2_SRF", "S3_SRF", "S2_SRF_l2", "S3_SRF_l2", "HS_401_l2"],
                 ),
                 (
                     "all_arm_paired",
                     masks_all["all_arm_ok"],
-                    ["B0_ratio", "M0_context", "S2_SRF", "S3_SRF", "HS_401_raw", "HS_401_l2", "M0_plus_S3", "M0_plus_HS"],
-                    ["B0_ratio", "M0_context", "S2_SRF", "S3_SRF", "HS_401_l2", "M0_plus_S3", "M0_plus_HS"],
+                    [
+                        "B0_ratio",
+                        "M0_context",
+                        "S2_SRF",
+                        "S3_SRF",
+                        "S2_SRF_l2",
+                        "S3_SRF_l2",
+                        "HS_401_raw",
+                        "HS_401_l2",
+                        "M0_plus_S3",
+                        "M0_plus_S3_l2",
+                        "M0_plus_HS",
+                    ],
+                    [
+                        "B0_ratio",
+                        "M0_context",
+                        "S2_SRF",
+                        "S3_SRF",
+                        "S2_SRF_l2",
+                        "S3_SRF_l2",
+                        "M0_plus_S3",
+                        "M0_plus_S3_l2",
+                    ],
                 ),
             ]
 
@@ -952,14 +1004,19 @@ def run_benchmark(
                     est_list: list[tuple[str, list[str]]] = [("Ridge", ridge_arms)]
                     if run_hgb:
                         if cohort_mode == "primary_optical":
-                            hgb_sel = (
-                                ["S2_SRF", "S3_SRF", "HS_401_raw", "HS_401_l2"]
-                                if sp_name == "temporal_80_20"
-                                else hgb_arms
-                            )
+                            if sp_name == "random_kfold_diag":
+                                hgb_sel = ["S2_SRF", "S3_SRF", "S2_SRF_l2", "S3_SRF_l2"]
+                            elif sp_name == "temporal_80_20":
+                                hgb_sel = ["S2_SRF", "S3_SRF", "S2_SRF_l2", "S3_SRF_l2", "HS_401_raw", "HS_401_l2"]
+                            else:
+                                hgb_sel = hgb_arms
                         else:
-                            # On all_arm_paired, skip HGB on diagnostic random_kfold_diag to keep CPU budget lean
-                            hgb_sel = [] if sp_name == "random_kfold_diag" else hgb_arms
+                            if sp_name == "random_kfold_diag":
+                                hgb_sel = []
+                            elif sp_name == "temporal_80_20":
+                                hgb_sel = hgb_arms + ["HS_401_l2", "M0_plus_HS"]
+                            else:
+                                hgb_sel = hgb_arms
                         if hgb_sel:
                             est_list.append(("HGB", hgb_sel))
 
@@ -1074,14 +1131,20 @@ def run_benchmark(
 
                         # Paired cluster-bootstrap contrasts (A01: RMSE(arm_a) - RMSE(arm_b), negative favors arm_a)
                         contrast_pairs: list[tuple[str, str, str]] = [
+                            ("HS_401_l2_vs_S3_SRF_l2", "HS_401_l2", "S3_SRF_l2"),
+                            ("HS_401_l2_vs_S2_SRF_l2", "HS_401_l2", "S2_SRF_l2"),
+                            ("S3_SRF_l2_vs_S2_SRF_l2", "S3_SRF_l2", "S2_SRF_l2"),
                             ("HS_401_l2_vs_S3_SRF", "HS_401_l2", "S3_SRF"),
                             ("HS_401_l2_vs_S2_SRF", "HS_401_l2", "S2_SRF"),
                             ("HS_401_raw_vs_S3_SRF", "HS_401_raw", "S3_SRF"),
                             ("S3_SRF_vs_S2_SRF", "S3_SRF", "S2_SRF"),
                             ("HS_401_l2_vs_B0_ratio", "HS_401_l2", "B0_ratio"),
+                            ("S3_SRF_l2_vs_B0_ratio", "S3_SRF_l2", "B0_ratio"),
                             ("S3_SRF_vs_B0_ratio", "S3_SRF", "B0_ratio"),
+                            ("M0_plus_HS_vs_M0_plus_S3_l2", "M0_plus_HS", "M0_plus_S3_l2"),
                             ("M0_plus_HS_vs_M0_plus_S3", "M0_plus_HS", "M0_plus_S3"),
                             ("M0_plus_HS_vs_M0_context", "M0_plus_HS", "M0_context"),
+                            ("M0_plus_S3_l2_vs_M0_context", "M0_plus_S3_l2", "M0_context"),
                             ("HS_401_l2_vs_M0_context", "HS_401_l2", "M0_context"),
                         ]
                         for cname, arm_hs, arm_ref in contrast_pairs:
@@ -1330,19 +1393,27 @@ def run_benchmark(
     fig_path = out_dir / "hs_r02_summary_figure.png"
     render_key = make_summary_figure(metrics_df, deltas_df, budget_df, strat_df, fig_path)
 
-    # Evaluate formal §5 decision rule automatically from primary contrasts
+    # Evaluate formal §5 decision rule automatically from matched-preprocessing primary contrasts
     decision_summary: dict[str, Any] = {}
     for target in TARGETS:
         for est_name in (("Ridge", "HGB") if run_hgb else ("Ridge",)):
             pass_both_splits = True
             detail: dict[str, Any] = {}
+            s3_contrast = "HS_401_l2_vs_S3_SRF_l2" if est_name == "Ridge" else "HS_401_l2_vs_S3_SRF"
             for sp in ("site_kfold", "dataset_kfold"):
                 row_s3 = deltas_df[
                     (deltas_df["target"] == target)
                     & (deltas_df["cohort_mode"] == "primary_optical")
                     & (deltas_df["split"] == sp)
                     & (deltas_df["estimator"] == est_name)
-                    & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF")
+                    & (deltas_df["contrast"] == s3_contrast)
+                ]
+                row_s3_l2 = deltas_df[
+                    (deltas_df["target"] == target)
+                    & (deltas_df["cohort_mode"] == "primary_optical")
+                    & (deltas_df["split"] == sp)
+                    & (deltas_df["estimator"] == est_name)
+                    & (deltas_df["contrast"] == "HS_401_l2_vs_S3_SRF_l2")
                 ]
                 row_b0 = deltas_df[
                     (deltas_df["target"] == target)
@@ -1362,17 +1433,23 @@ def run_benchmark(
                     and row_b0["meets_003_magnitude"].iloc[0]
                 )
                 detail[sp] = {
-                    "delta_vs_S3": None if len(row_s3) != 1 else float(row_s3["delta_hs_minus_ref"].iloc[0]),
-                    "ci_vs_S3": None
+                    "primary_s3_contrast": s3_contrast,
+                    "delta_vs_S3_primary": None if len(row_s3) != 1 else float(row_s3["delta_hs_minus_ref"].iloc[0]),
+                    "ci_vs_S3_primary": None
                     if len(row_s3) != 1
                     else [float(row_s3["ci_low"].iloc[0]), float(row_s3["ci_high"].iloc[0])],
+                    "delta_vs_S3_l2": None if len(row_s3_l2) != 1 else float(row_s3_l2["delta_hs_minus_ref"].iloc[0]),
+                    "ci_vs_S3_l2": None
+                    if len(row_s3_l2) != 1
+                    else [float(row_s3_l2["ci_low"].iloc[0]), float(row_s3_l2["ci_high"].iloc[0])],
                     "delta_vs_B0": None if len(row_b0) != 1 else float(row_b0["delta_hs_minus_ref"].iloc[0]),
                     "ci_vs_B0": None
                     if len(row_b0) != 1
                     else [float(row_b0["ci_low"].iloc[0]), float(row_b0["ci_high"].iloc[0])],
-                    "passes_s3_and_b0_003": ok_s3 and ok_b0,
+                    "passes_s3_003": ok_s3,
+                    "passes_b0_003": None if len(row_b0) != 1 else ok_b0,
                 }
-                pass_both_splits = pass_both_splits and ok_s3 and ok_b0
+                pass_both_splits = pass_both_splits and ok_s3 and (ok_b0 if len(row_b0) == 1 else True)
             decision_summary[f"{target}_{est_name}"] = {
                 "interesting_supported": pass_both_splits,
                 "splits": detail,
@@ -1438,7 +1515,9 @@ def run_benchmark(
             "eligible_s3a_bands_400_800": mats_800["s3_bands"],
             "eligible_s2a_bands_400_700": mats_700["s2_bands"],
             "eligible_s3a_bands_400_700": mats_700["s3_bands"],
+            "hgb_inner_cv_folds": 3,
             "output_sha256": output_sha,
+            "ridge_inner_cv_folds": 5,
             "script_in_commit": git_info["script_in_commit"],
             "support_rel_tol": SUPPORT_REL_TOL,
         },

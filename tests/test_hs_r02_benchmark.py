@@ -67,8 +67,11 @@ def test_feature_arms_preserve_negative_rrs_and_flag_b0_m0_missingness() -> None
     W_dummy, _ = mod.build_boxcar_weight_matrix(wl, [("B1", 443.0, 20.0), ("B2", 665.0, 20.0)])
     mats = {"W_s2": W_dummy, "W_s3": W_dummy, "W_s2_box": W_dummy, "W_s3_box": W_dummy}
     arms, masks = mod.build_feature_arms(X, wl, meta, target_col="Chla", sensor_mats=mats)
-    # Negative Rrs preserved unclipped in HS_401_raw
+    # Negative Rrs preserved unclipped in HS_401_raw; matched L2 multispectral arms include log10(norm)
     assert float(arms["HS_401_raw"][1, -1]) == pytest.approx(-0.0002)
+    assert arms["S2_SRF_l2"].shape == (n, 3)
+    assert arms["S3_SRF_l2"].shape == (n, 3)
+    assert np.allclose(np.linalg.norm(arms["S2_SRF_l2"][:, :-1], axis=1), 1.0, atol=1e-12)
     assert masks["b0_ok"].tolist() == [True, True, False, True]
     assert masks["m0_ok"].tolist() == [True, True, True, False]
     assert masks["all_arm_ok"].tolist() == [True, True, False, False]
