@@ -1,0 +1,512 @@
+{
+  "cohort_key": "1b31d2b2c9a6f62b",
+  "counts": {
+    "Chla_400_700_exclude_optical": {
+      "attempted": 7572,
+      "completed": 3455,
+      "denominator": 7572,
+      "excluded": 4117,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 7,
+        "missing_or_nonpositive_target": 2441,
+        "missing_site_group": 0,
+        "optically_derived_chla_circularity": 286,
+        "qc_flagged": 1383
+      },
+      "failed": 0
+    },
+    "Chla_400_700_include_optical": {
+      "attempted": 7572,
+      "completed": 3741,
+      "denominator": 7572,
+      "excluded": 3831,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 7,
+        "missing_or_nonpositive_target": 2441,
+        "missing_site_group": 0,
+        "qc_flagged": 1383
+      },
+      "failed": 0
+    },
+    "Chla_all_arm_paired": {
+      "attempted": 2840,
+      "completed": 2764,
+      "denominator": 2840,
+      "excluded": 76,
+      "exclusion_reasons": {
+        "missing_b0_ratio_or_avw": 40,
+        "missing_m0_context_after_b0": 36
+      },
+      "failed": 0
+    },
+    "Chla_primary_400_800": {
+      "attempted": 7572,
+      "completed": 2840,
+      "denominator": 7572,
+      "excluded": 4732,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 987,
+        "missing_or_nonpositive_target": 2441,
+        "missing_site_group": 0,
+        "optically_derived_chla_circularity": 0,
+        "qc_flagged": 1304
+      },
+      "failed": 0
+    },
+    "Chla_temporal_dated": {
+      "attempted": 2840,
+      "completed": 2840,
+      "denominator": 2840,
+      "excluded": 0,
+      "exclusion_reasons": {
+        "missing_or_unparseable_timestamp": 0
+      },
+      "failed": 0
+    },
+    "TSS_all_arm_paired": {
+      "attempted": 3038,
+      "completed": 2982,
+      "denominator": 3038,
+      "excluded": 56,
+      "exclusion_reasons": {
+        "missing_b0_ratio_or_avw": 11,
+        "missing_m0_context_after_b0": 45
+      },
+      "failed": 0
+    },
+    "TSS_primary_400_800": {
+      "attempted": 7572,
+      "completed": 3038,
+      "denominator": 7572,
+      "excluded": 4534,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 434,
+        "missing_or_nonpositive_target": 2951,
+        "missing_site_group": 0,
+        "qc_flagged": 1149
+      },
+      "failed": 0
+    },
+    "TSS_temporal_dated": {
+      "attempted": 3038,
+      "completed": 3038,
+      "denominator": 3038,
+      "excluded": 0,
+      "exclusion_reasons": {
+        "missing_or_unparseable_timestamp": 0
+      },
+      "failed": 0
+    },
+    "aCDOM440_all_arm_paired": {
+      "attempted": 2709,
+      "completed": 2644,
+      "denominator": 2709,
+      "excluded": 65,
+      "exclusion_reasons": {
+        "missing_b0_ratio_or_avw": 32,
+        "missing_m0_context_after_b0": 33
+      },
+      "failed": 0
+    },
+    "aCDOM440_primary_400_800": {
+      "attempted": 7572,
+      "completed": 2709,
+      "denominator": 7572,
+      "excluded": 4863,
+      "exclusion_reasons": {
+        "incomplete_rrs_window": 683,
+        "missing_or_nonpositive_target": 3185,
+        "missing_site_group": 0,
+        "qc_flagged": 995
+      },
+      "failed": 0
+    },
+    "aCDOM440_temporal_dated": {
+      "attempted": 2709,
+      "completed": 2706,
+      "denominator": 2709,
+      "excluded": 3,
+      "exclusion_reasons": {
+        "missing_or_unparseable_timestamp": 3
+      },
+      "failed": 0
+    }
+  },
+  "experiment_id": "HS-R02",
+  "extra": {
+    "bootstrap_sign_convention": "RMSE(candidate) - RMSE(reference); negative values favor candidate (HS_401)",
+    "cohort_keys_by_target": {
+      "Chla": {
+        "all_arm_paired": "748d0603441de4ad",
+        "primary_optical": "1b31d2b2c9a6f62b"
+      },
+      "TSS": {
+        "all_arm_paired": "735d38a0ea983530",
+        "primary_optical": "c46e3a4ece8fbd19"
+      },
+      "aCDOM440": {
+        "all_arm_paired": "1fe59488294eef99",
+        "primary_optical": "7dec2a13d4382fc9"
+      }
+    },
+    "decision_rule_summary": {
+      "Chla_HGB": {
+        "interesting_supported_matched_l2": false,
+        "splits": {
+          "dataset_kfold": {
+            "ci_vs_B0": null,
+            "ci_vs_S3_l2": [
+              -0.022396,
+              0.009216
+            ],
+            "ci_vs_S3_raw": [
+              -0.090999,
+              -0.001488
+            ],
+            "delta_vs_B0": null,
+            "delta_vs_S3_l2": -0.007567,
+            "delta_vs_S3_raw": -0.041526,
+            "passes_b0_003": null,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          },
+          "site_kfold": {
+            "ci_vs_B0": null,
+            "ci_vs_S3_l2": [
+              -0.110479,
+              0.003303
+            ],
+            "ci_vs_S3_raw": [
+              -0.058389,
+              -0.004818
+            ],
+            "delta_vs_B0": null,
+            "delta_vs_S3_l2": -0.042587,
+            "delta_vs_S3_raw": -0.030756,
+            "passes_b0_003": null,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          }
+        }
+      },
+      "Chla_Ridge": {
+        "interesting_supported_matched_l2": false,
+        "splits": {
+          "dataset_kfold": {
+            "ci_vs_B0": [
+              -0.126,
+              -0.026605
+            ],
+            "ci_vs_S3_l2": [
+              -0.060268,
+              -0.014175
+            ],
+            "ci_vs_S3_raw": [
+              -0.304043,
+              -0.118891
+            ],
+            "delta_vs_B0": -0.075413,
+            "delta_vs_S3_l2": -0.036449,
+            "delta_vs_S3_raw": -0.213698,
+            "passes_b0_003": true,
+            "passes_s3_l2_003": true,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          },
+          "site_kfold": {
+            "ci_vs_B0": [
+              -0.10292,
+              0.140149
+            ],
+            "ci_vs_S3_l2": [
+              -0.080161,
+              -0.030212
+            ],
+            "ci_vs_S3_raw": [
+              -0.318876,
+              -0.159172
+            ],
+            "delta_vs_B0": -0.004088,
+            "delta_vs_S3_l2": -0.056676,
+            "delta_vs_S3_raw": -0.242306,
+            "passes_b0_003": false,
+            "passes_s3_l2_003": true,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          }
+        }
+      },
+      "TSS_HGB": {
+        "interesting_supported_matched_l2": false,
+        "splits": {
+          "dataset_kfold": {
+            "ci_vs_B0": null,
+            "ci_vs_S3_l2": [
+              -0.023002,
+              0.018998
+            ],
+            "ci_vs_S3_raw": [
+              -0.011944,
+              0.022875
+            ],
+            "delta_vs_B0": null,
+            "delta_vs_S3_l2": -0.003052,
+            "delta_vs_S3_raw": 0.006142,
+            "passes_b0_003": null,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          },
+          "site_kfold": {
+            "ci_vs_B0": null,
+            "ci_vs_S3_l2": [
+              -0.003756,
+              0.016636
+            ],
+            "ci_vs_S3_raw": [
+              -0.034355,
+              0.013615
+            ],
+            "delta_vs_B0": null,
+            "delta_vs_S3_l2": 0.005897,
+            "delta_vs_S3_raw": -0.00845,
+            "passes_b0_003": null,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          }
+        }
+      },
+      "TSS_Ridge": {
+        "interesting_supported_matched_l2": false,
+        "splits": {
+          "dataset_kfold": {
+            "ci_vs_B0": [
+              -0.054516,
+              0.015515
+            ],
+            "ci_vs_S3_l2": [
+              -0.014426,
+              0.028267
+            ],
+            "ci_vs_S3_raw": [
+              -0.152785,
+              -0.034653
+            ],
+            "delta_vs_B0": -0.020446,
+            "delta_vs_S3_l2": 0.006635,
+            "delta_vs_S3_raw": -0.090653,
+            "passes_b0_003": false,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          },
+          "site_kfold": {
+            "ci_vs_B0": [
+              -0.105128,
+              -0.033675
+            ],
+            "ci_vs_S3_l2": [
+              -0.011797,
+              0.01006
+            ],
+            "ci_vs_S3_raw": [
+              -0.182814,
+              -0.083054
+            ],
+            "delta_vs_B0": -0.066446,
+            "delta_vs_S3_l2": -0.00093,
+            "delta_vs_S3_raw": -0.128438,
+            "passes_b0_003": true,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          }
+        }
+      },
+      "aCDOM440_HGB": {
+        "interesting_supported_matched_l2": false,
+        "splits": {
+          "dataset_kfold": {
+            "ci_vs_B0": null,
+            "ci_vs_S3_l2": [
+              -0.024319,
+              0.023196
+            ],
+            "ci_vs_S3_raw": [
+              -0.075874,
+              -0.006216
+            ],
+            "delta_vs_B0": null,
+            "delta_vs_S3_l2": 0.001556,
+            "delta_vs_S3_raw": -0.038572,
+            "passes_b0_003": null,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          },
+          "site_kfold": {
+            "ci_vs_B0": null,
+            "ci_vs_S3_l2": [
+              -0.023214,
+              0.002238
+            ],
+            "ci_vs_S3_raw": [
+              -0.045777,
+              -0.007535
+            ],
+            "delta_vs_B0": null,
+            "delta_vs_S3_l2": -0.010554,
+            "delta_vs_S3_raw": -0.025839,
+            "passes_b0_003": null,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          }
+        }
+      },
+      "aCDOM440_Ridge": {
+        "interesting_supported_matched_l2": false,
+        "splits": {
+          "dataset_kfold": {
+            "ci_vs_B0": [
+              -0.022917,
+              0.031996
+            ],
+            "ci_vs_S3_l2": [
+              -0.005373,
+              0.016454
+            ],
+            "ci_vs_S3_raw": [
+              -0.203356,
+              -0.0646
+            ],
+            "delta_vs_B0": 0.001302,
+            "delta_vs_S3_l2": 0.004454,
+            "delta_vs_S3_raw": -0.131558,
+            "passes_b0_003": false,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          },
+          "site_kfold": {
+            "ci_vs_B0": [
+              -0.041203,
+              0.001249
+            ],
+            "ci_vs_S3_l2": [
+              -0.017343,
+              0.002322
+            ],
+            "ci_vs_S3_raw": [
+              -0.207001,
+              -0.115001
+            ],
+            "delta_vs_B0": -0.018936,
+            "delta_vs_S3_l2": -0.007626,
+            "delta_vs_S3_raw": -0.160989,
+            "passes_b0_003": false,
+            "passes_s3_l2_003": false,
+            "primary_s3_contrast": "HS_401_l2_vs_S3_SRF_l2"
+          }
+        }
+      }
+    },
+    "eligible_s2a_bands_400_700": [
+      "B1",
+      "B2",
+      "B3",
+      "B4"
+    ],
+    "eligible_s2a_bands_400_800": [
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "B5",
+      "B6",
+      "B7"
+    ],
+    "eligible_s3a_bands_400_700": [
+      "Oa02",
+      "Oa03",
+      "Oa04",
+      "Oa05",
+      "Oa06",
+      "Oa07",
+      "Oa08",
+      "Oa09",
+      "Oa10"
+    ],
+    "eligible_s3a_bands_400_800": [
+      "Oa02",
+      "Oa03",
+      "Oa04",
+      "Oa05",
+      "Oa06",
+      "Oa07",
+      "Oa08",
+      "Oa09",
+      "Oa10",
+      "Oa11",
+      "Oa12",
+      "Oa13",
+      "Oa14",
+      "Oa15",
+      "Oa16"
+    ],
+    "hgb_inner_cv_folds": 3,
+    "output_sha256": {
+      "hs_r02_summary_figure.png": "e8a92fdb9ad8583a685cf40a6c454bc0822ee422b959f242ba146d204bb18ba1",
+      "metrics.csv": "dc7710f62a410ff0ba1011e0d49f833366d140f1d8f84c35ee620e3c425d5108",
+      "ood_and_waterbody_stratified.csv": "5698d98e41a5f8aa8faab744c21c85215dc99776cd1fcb6aab4bd0cea3429875",
+      "paired_deltas.csv": "d762d0314db11ed04bfde79151b7f10d75e09d750b63c36756342ab508b01141",
+      "radiometric_budget.csv": "6d5e0f0368ec2e1dc31ff346b3eeceb604fb52dfa78b76fabb512b7fe1938fe8"
+    },
+    "ridge_inner_cv_folds": 5,
+    "script_in_commit": true,
+    "support_rel_tol": 1e-06
+  },
+  "git_commit": "53bce8616de82f487777a8cb18139077476c7087",
+  "git_tree_clean": true,
+  "inputs_sha256": {
+    "src.esa-s2a-msi-srf": "42be3ebd8bfcbde11c37caeb2e2fdda65fefa8d2b6f8329559b7806d02cdc9e2",
+    "src.esa-s3a-olci-srf": "e2806df83b6a874e1b5ecd98bd56c70368e4bca6c75e6c7bad6b472cdc5fef7d",
+    "src.gloria-2022": "f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14"
+  },
+  "measurement_contract": "hydrospectral.numeric/1",
+  "prior_exposure": "Disclosed in pre-registrations/2026-11-26-hs-r02-official-srf-retrieval.md (2026-11-26 preflight + 2026-11-28 ESA SRF audit, zero-leakage GLORIA EDA, and 6 partial Chla primary_optical site_kfold cells observed during initial f0fa684 wall-time calibration prior to freezing matched-L2 S2/S3 arms and 3-fold HGB inner CV)",
+  "randomness": {
+    "pairing_rule": "Byte-identical CohortCounts, cohort_key, and fold index arrays verified via assert_matching_cohort_keys and assert_paired_splits across all compared arms",
+    "seed": 2026
+  },
+  "render_key": "569f6069f37de97d",
+  "runtime": {
+    "implementation": "CPython",
+    "packages": {
+      "colour-science": "0.4.7",
+      "h5py": "3.16.0",
+      "hydrospectral": "0.4.0.dev0",
+      "joblib": "1.6.0",
+      "jsonschema": "4.26.0",
+      "matplotlib": "3.11.2",
+      "numpy": "2.5.5",
+      "pandas": "3.1.1",
+      "pyyaml": "6.0.4",
+      "scikit-learn": "1.9.1",
+      "scipy": "1.18.1"
+    },
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python_version": "3.14.6"
+  },
+  "schema_version": 1,
+  "script": {
+    "path": "results/HS-R02_official_srf_retrieval/run_hs_r02.py",
+    "sha256": "2d3c8ed16b70b1eb0166f76e4186bfdae2eff7fe79ff9b667dfb4eb38afde320"
+  },
+  "status": "exploratory",
+  "title": "Official ESA S2A/S3A SRF compression vs. full 1 nm hyperspectral bio-optical retrieval on GLORIA",
+  "units": {
+    "Chla": "ug/L",
+    "Rrs": "sr^-1",
+    "TSS": "mg/L",
+    "aCDOM440": "m^-1",
+    "equal_group_log10_rmse": "log10(target_unit)",
+    "pooled_log10_rmse": "log10(target_unit)",
+    "raw_mae": "target_unit",
+    "raw_mdsa": "percent",
+    "raw_median_ae": "target_unit",
+    "sam_rad": "rad"
+  }
+}
