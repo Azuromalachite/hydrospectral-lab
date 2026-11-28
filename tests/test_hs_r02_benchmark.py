@@ -144,3 +144,41 @@ def test_nested_cv_ridge_and_hgb_prevent_test_fold_leakage() -> None:
     )
     assert np.array_equal(idx_t, te_temp)
     assert pred_t.shape == (20,)
+
+
+def test_hs_r02_retained_package_integrity_and_provenance() -> None:
+    """Verify retained HS-R02 package manifest, checksums, denominators, and sign rules."""
+    import json
+
+    from hydrospectral.provenance import sha256_file, validate_manifest
+
+    pkg_dir = RUNNER_PATH.parent
+    manifest_path = pkg_dir / "manifest.json"
+    assert manifest_path.is_file()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    validate_manifest(manifest)
+
+    assert manifest["experiment_id"] == "HS-R02"
+    assert manifest["status"] == "exploratory"
+    assert manifest["git_tree_clean"] is True
+    assert manifest["extra"]["script_in_commit"] is True
+    assert manifest["extra"]["support_rel_tol"] == pytest.approx(1e-6)
+    assert manifest["extra"]["eligible_s2a_bands_400_800"] == ["B1", "B2", "B3", "B4", "B5", "B6", "B7"]
+    assert len(manifest["extra"]["eligible_s3a_bands_400_800"]) == 15
+
+    # Exact primary cohort denominators
+    assert manifest["counts"]["Chla_primary_400_800"]["completed"] == 2840
+    assert manifest["counts"]["TSS_primary_400_800"]["completed"] == 3038
+    assert manifest["counts"]["aCDOM440_primary_400_800"]["completed"] == 2709
+    assert manifest["counts"]["Chla_400_700_exclude_optical"]["completed"] == 3455
+    assert manifest["counts"]["Chla_400_700_include_optical"]["completed"] == 3741
+
+    # Output SHA-256 parity across all retained CSVs and PNG
+    for fname, expected_digest in manifest["extra"]["output_sha256"].items():
+        fpath = pkg_dir / fname
+        assert fpath.is_file(), f"missing retained output {fname}"
+        assert sha256_file(fpath) == expected_digest
+
+    # Verify matched-preprocessing decision summary reports honest null across all cells
+    for cell_key, info in manifest["extra"]["decision_rule_summary"].items():
+        assert info["interesting_supported_matched_l2"] is False, f"unexpected pass in {cell_key}"

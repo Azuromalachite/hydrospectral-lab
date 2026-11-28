@@ -745,7 +745,7 @@ def make_summary_figure(
     ax.set_title("B. Paired Cluster-Bootstrap 95% CIs (Matched-Preprocessing Contrasts)")
     ax.legend(frameon=False, fontsize=7.5, loc="lower left")
 
-    # Panel C: Validation optimism gap (Random vs Site vs Study vs Temporal) + M0/B0 baselines (Ridge all_arm_paired)
+    # Panel C: Validation optimism gap (pooled log10 RMSE so denominators are commensurable across splits)
     ax = axes[1, 0]
     sub_c = metrics_df[
         (metrics_df["cohort_mode"] == "all_arm_paired")
@@ -753,20 +753,20 @@ def make_summary_figure(
         & (metrics_df["split"].isin(["random_kfold_diag", "site_kfold", "dataset_kfold", "temporal_80_20"]))
         & (metrics_df["arm"].isin(["B0_ratio", "M0_context", "S3_SRF_l2", "HS_401_l2"]))
     ]
-    split_order = ["random_kfold_diag", "temporal_80_20", "site_kfold", "dataset_kfold"]
-    split_names = ["Random\n(diag)", "Temporal\n80/20", "Site\nholdout", "Study\nholdout"]
+    split_order = ["random_kfold_diag", "site_kfold", "dataset_kfold", "temporal_80_20"]
+    split_names = ["Random\n(diag)", "Site\nholdout", "Study\nholdout", "Temporal\n80/20"]
     x_c = np.arange(len(split_order))
     for i, arm in enumerate(("M0_context", "B0_ratio", "S3_SRF_l2", "HS_401_l2")):
         vals = []
         for sp in split_order:
             s_rows = sub_c[(sub_c["split"] == sp) & (sub_c["arm"] == arm) & (sub_c["target"] == "Chla")]
-            vals.append(float(s_rows["equal_group_log10_rmse"].iloc[0]) if len(s_rows) else math.nan)
+            vals.append(float(s_rows["pooled_log10_rmse"].iloc[0]) if len(s_rows) else math.nan)
         ax.plot(x_c, vals, marker="o", lw=1.8, color=cols[i], label=arm)
     ax.set_xticks(x_c)
     ax.set_xticklabels(split_names)
-    ax.set_ylabel("Chla equal-group log10 RMSE (Ridge)")
+    ax.set_ylabel("Chla pooled log10 RMSE (Ridge)")
     ax.set_title("C. Validation-Optimism Gap & Baselines (Chla Paired Cohort)")
-    ax.legend(frameon=False, fontsize=7.8, loc="upper left")
+    ax.legend(frameon=True, facecolor="white", framealpha=0.92, edgecolor="#cccccc", fontsize=7.6, loc="center right")
 
     # Panel D: OOD vs In-domain & Water-body stratification (Chla matched L2: S3_SRF_l2 vs HS_401_l2, Ridge site_kfold)
     ax = axes[1, 1]
@@ -1448,7 +1448,7 @@ def run_benchmark(
                     "passes_s3_l2_003": ok_s3,
                     "passes_b0_003": None if len(row_b0) != 1 else ok_b0,
                 }
-                pass_both_splits = pass_both_splits and ok_s3 and (ok_b0 if len(row_b0) == 1 else True)
+                pass_both_splits = pass_both_splits and ok_s3 and (ok_b0 if len(row_b0) == 1 else False)
             decision_summary[f"{target}_{est_name}"] = {
                 "interesting_supported_matched_l2": pass_both_splits,
                 "splits": detail,
@@ -1503,8 +1503,9 @@ def run_benchmark(
         ),
         prior_exposure=(
             "Disclosed in pre-registrations/2026-11-26-hs-r02-official-srf-retrieval.md "
-            "(2026-11-26 preflight + 2026-11-28 ESA SRF support audit and zero-leakage GLORIA dataset EDA; "
-            "zero retrieval models fitted prior to 2026-11-28 A01-A10 amendment commit)"
+            "(2026-11-26 preflight + 2026-11-28 ESA SRF audit, zero-leakage GLORIA EDA, and 6 partial "
+            "Chla primary_optical site_kfold cells observed during initial f0fa684 wall-time calibration "
+            "prior to freezing matched-L2 S2/S3 arms and 3-fold HGB inner CV)"
         ),
         extra={
             "bootstrap_sign_convention": "RMSE(candidate) - RMSE(reference); negative values favor candidate (HS_401)",
