@@ -1,0 +1,14 @@
+target,reason,excluded
+Chla,missing_or_nonpositive_target,2441
+Chla,incomplete_rrs_window,987
+Chla,qc_flagged,1304
+Chla,optically_derived_chla_circularity,0
+Chla,missing_site_group,0
+TSS,missing_or_nonpositive_target,2951
+TSS,incomplete_rrs_window,434
+TSS,qc_flagged,1149
+TSS,missing_site_group,0
+aCDOM440,missing_or_nonpositive_target,3185
+aCDOM440,incomplete_rrs_window,683
+aCDOM440,qc_flagged,995
+aCDOM440,missing_site_group,0

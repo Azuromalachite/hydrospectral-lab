@@ -80,4 +80,33 @@ Primary metric: **equal-group `log10` RMSE** (`compute_regression_metrics(..., g
 
 ## 7. Deviations (append-only, dated)
 
-*(None yet — protocol frozen prior to official-SRF staging and execution.)*
+### 2026-11-26 — Real-archive preflight observed; confirmatory run still blocked
+
+An external audit of `GLORIA-2022.zip` (58,956,647 bytes, SHA-256 `f5ad5106d5fd74f0d874085a23e4189302e7409aed9f82d629ae6cdb47d21f14`) was imported as `results/HS-R02_gloria_preflight/` with status `provenance-incomplete`. No retrieval model was fitted and no held-out score was inspected. The audit script is not `hydrospectral.gloria.build_target_cohort`. This workspace did not contain the archive, so the counts below were checked for internal arithmetic consistency and were not recomputed from the zip.
+
+Primary cohorts reported by that audit, using the same sequential filters as section 3 (positive target, finite 400–800 nm \(R_{rs}\), unflagged on the seven QC columns, Chla optical-circularity mask, non-empty `Country|Site_name`):
+
+| Target | Attempted | Completed | Excluded | Negative \(R_{rs}\) in the completed cohort |
+| --- | ---: | ---: | ---: | ---: |
+| Chla | 7,572 | 2,840 | 4,732 | 308 |
+| TSS | 7,572 | 3,038 | 4,534 | 31 |
+| aCDOM440 | 7,572 | 2,709 | 4,863 | 264 |
+
+The Chla row matches the expected denominator in section 3. The optical-circularity step removed **0** Chla rows after the preceding filters, and the audit reports 290 optical-Chla marker rows in the whole archive. The section 3 isolate-`OdermattD_CH_Eawag` control is therefore not exercised by the 400–800 nm primary cohort. A 400–700 nm retain-versus-exclude count is still required before any claim that circularity was stress-tested. These preflight counts are now prior exposure for every later confirmatory run.
+
+The following clarifications were proposed with the import and are **not adopted**. Sections 4–6 are unchanged. No threshold, feature arm, estimator, or success rule moves because these counts were seen.
+
+| ID | Proposal left unresolved |
+| --- | --- |
+| A01 | Call the existing cluster bootstrap as RMSE(HS) − RMSE(reference) when the decision rule needs a negative interval to favor hyperspectral reflectance. Record that sign in the result manifest. |
+| A02 | Report raw-unit MdSA, \(100(\exp(\mathrm{median}(\|\ln(\hat y/y)\|))-1)\), in addition to raw MAE and raw median absolute error. `compute_regression_metrics` does not yet return MdSA. |
+| A03 | `build_srf_weight_matrix` treats response above `1e-8` times the band maximum as support. The candidate kernel treats any sampled \(R>0\), including a \(10^{-12}\) table endpoint, as support. Freeze one rule before SRF conversion. |
+| A04 | Ratio and AVW are undefined on some retained spectra. The audit's all-arm intersection (Chla 2,764, TSS 2,982, aCDOM440 2,644) is not the primary cohort. Do not drop rows for one arm only. |
+| A05 | Primary cohorts in the audit had no missing `Dataset_ID`. Three aCDOM440 rows had missing or unparseable timestamps. Exact `GLORIA_ID` order and fold indices still have to be compared with `build_target_cohort` before scoring. |
+| A06 | Inner-fold count, inner loss, temporal inner scheme, and `HistGradientBoostingRegressor` early stopping are still unspecified. The candidate kernel is not approved and is not wired into CI. |
+| A07 | This protocol's `OPT-13` label collides with the handoff's pigment-concentration task. Keep `HS-R02` and `GL-R08` as the canonical IDs. Do not renumber. |
+| A08 | Two hyperspectral sub-arms and two estimators across three targets can be selected after seeing scores. No primary cell is frozen by this deviation. |
+| A09 | "Gain disappears once M0 is controlled" is not defined by reporting the context-only arm. No context-plus-optics ablation is added. |
+| A10 | Recompute optical-Chla retain versus exclude on 400–700 nm without changing the 400–800 nm primary cohort. |
+
+Official Sentinel-2 MSI and Sentinel-3 OLCI SRF bytes are still unpinned. `results/HS-R02_gloria_preflight/candidate/stage_inputs.py` only names candidate URLs. Confirmatory evaluation stays blocked until those files are staged outside Git, digest-verified, and converted under the frozen support rule. Published MDN or BNN weights (`GL-R07`) stay out of this protocol until a separate, pre-result specification audits training overlap.

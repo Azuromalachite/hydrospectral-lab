@@ -1,0 +1,4 @@
+target,attempted,completed,excluded,negative_rrs,untested_qc,sites,studies,missing_study,missing_date,b0_eligible,context_eligible,candidate_all_arm_paired,paired_sites,paired_studies,river_count
+Chla,7572,2840,4732,308,2191,268,34,0,0,2800,2804,2764,265,34,38
+TSS,7572,3038,4534,31,2271,341,32,0,0,3027,2993,2982,338,32,193
+aCDOM440,7572,2709,4863,264,1997,271,31,0,3,2677,2676,2644,267,30,162
